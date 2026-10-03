@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View, Text } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import OnboardingScreen from './src/screens/OnboardingScreen';
@@ -10,28 +10,21 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import VerifyOTPScreen from './src/screens/VerifyOTPScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import MainTabs from './src/navigation/MainTabs';
+import CommunityChatScreen from './src/screens/CommunityChatScreen';
+import CommunityMembersScreen from './src/screens/CommunityMembersScreen';
+import UserProfileScreen from './src/screens/UserProfileScreen';
+import CreateCommunityScreen from './src/screens/CreateCommunityScreen';
+import CreateEventScreen from './src/screens/CreateEventScreen';
+import CreateListingScreen from './src/screens/CreateListingScreen';
+import RentalsScreen from './src/screens/RentalsScreen';
+import CreateRentalScreen from './src/screens/CreateRentalScreen';
+import TherapyScreen from './src/screens/TherapyScreen';
+import TherapyRoomScreen from './src/screens/TherapyRoomScreen';
+import BecomeSellerScreen from './src/screens/BecomeSellerScreen';
+import MyListingsScreen from './src/screens/MyListingsScreen';
+import LegalScreen from './src/screens/LegalScreen';
 
 const Stack = createNativeStackNavigator();
-
-const Placeholder = ({ route }) => (
-  <View style={{ flex: 1, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center' }}>
-    <Text style={{ color: '#fff', fontSize: 18 }}>{route.name}</Text>
-  </View>
-);
-
-// Temporary placeholder main screens
-const PlaceholderScreen = (name) => () => (
-  <View style={{ flex: 1, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center' }}>
-    <Text style={{ color: '#fff', fontSize: 20 }}>{name} ✅</Text>
-    <Text style={{ color: '#94A3B8', fontSize: 14, marginTop: 8 }}>Coming next!</Text>
-  </View>
-);
-
-const PulseScreen = PlaceholderScreen('Pulse Feed');
-const CommunitiesScreen = PlaceholderScreen('Communities');
-const SearchScreen = PlaceholderScreen('Search');
-const EventsScreen = PlaceholderScreen('Events');
-const ProfileScreen = PlaceholderScreen('Profile');
 
 function RootNavigator() {
   const { user, loading } = useAuth();
@@ -58,19 +51,19 @@ function RootNavigator() {
       {user ? (
         <>
           <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="CommunityChat" component={Placeholder} />
-          <Stack.Screen name="CommunityMembers" component={Placeholder} />
-          <Stack.Screen name="UserProfile" component={Placeholder} />
-          <Stack.Screen name="CreateCommunity" component={Placeholder} />
-          <Stack.Screen name="CreateEvent" component={Placeholder} />
-          <Stack.Screen name="CreateListing" component={Placeholder} />
-          <Stack.Screen name="Rentals" component={Placeholder} />
-          <Stack.Screen name="CreateRental" component={Placeholder} />
-          <Stack.Screen name="Therapy" component={Placeholder} />
-          <Stack.Screen name="TherapyRoom" component={Placeholder} />
-          <Stack.Screen name="BecomeSeller" component={Placeholder} />
-          <Stack.Screen name="MyListings" component={Placeholder} />
-          <Stack.Screen name="Legal" component={Placeholder} />
+          <Stack.Screen name="CommunityChat" component={CommunityChatScreen} />
+          <Stack.Screen name="CommunityMembers" component={CommunityMembersScreen} />
+          <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+          <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} />
+          <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
+          <Stack.Screen name="CreateListing" component={CreateListingScreen} />
+          <Stack.Screen name="Rentals" component={RentalsScreen} />
+          <Stack.Screen name="CreateRental" component={CreateRentalScreen} />
+          <Stack.Screen name="Therapy" component={TherapyScreen} />
+          <Stack.Screen name="TherapyRoom" component={TherapyRoomScreen} />
+          <Stack.Screen name="BecomeSeller" component={BecomeSellerScreen} />
+          <Stack.Screen name="MyListings" component={MyListingsScreen} />
+          <Stack.Screen name="Legal" component={LegalScreen} />
         </>
       ) : (
         <>

@@ -7,7 +7,7 @@ import * as SecureStore from 'expo-secure-store';
 const COCOA = '#7B4F2E';
 
 export default function VerifyOTPScreen({ route, navigation }) {
-  const { email } = route.params;
+  const { email, otpHint } = route.params;
   const { setUser } = useAuth();
   const [otp, setOtp] = useState(['','','','','','']);
   const [loading, setLoading] = useState(false);
@@ -19,6 +19,14 @@ export default function VerifyOTPScreen({ route, navigation }) {
     const timer = setInterval(() => setCountdown(prev => prev > 0 ? prev - 1 : 0), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Auto fill OTP if hint provided
+  useEffect(() => {
+    if (otpHint && otpHint.length === 6) {
+      const digits = otpHint.split('');
+      setOtp(digits);
+    }
+  }, [otpHint]);
 
   const handleOtpChange = (text, index) => {
     const newOtp = [...otp];
@@ -49,12 +57,16 @@ export default function VerifyOTPScreen({ route, navigation }) {
     if (countdown > 0) return;
     setResending(true);
     try {
-      await api.post('/auth/resend-otp', { email });
-      Alert.alert('Code sent!', 'A new code has been sent to your email.');
+      const res = await api.post('/auth/resend-otp', { email });
       setCountdown(60);
       setOtp(['','','','','','']);
+      if (res.data.otp_hint) {
+        const digits = res.data.otp_hint.split('');
+        setOtp(digits);
+        Alert.alert('Code ready!', `Your code is: ${res.data.otp_hint}`);
+      }
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Could not resend code.');
+      Alert.alert('Error', err.response?.data?.message || 'Could not resend.');
     } finally { setResending(false); }
   };
 
@@ -62,9 +74,18 @@ export default function VerifyOTPScreen({ route, navigation }) {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.content}>
         <Text style={styles.logo}>🌍 Wesoxch</Text>
-        <Text style={styles.title}>Check your email</Text>
-        <Text style={styles.subtitle}>We sent a 6-digit code to</Text>
+        <Text style={styles.title}>Verify your account</Text>
+        <Text style={styles.subtitle}>Enter the 6-digit code for</Text>
         <Text style={styles.email}>{email}</Text>
+
+        {otpHint && (
+          <View style={styles.hintBox}>
+            <Text style={styles.hintLabel}>📋 Your verification code:</Text>
+            <Text style={styles.hintCode}>{otpHint}</Text>
+            <Text style={styles.hintNote}>(Email delivery unavailable — code shown here)</Text>
+          </View>
+        )}
+
         <View style={styles.otpRow}>
           {otp.map((digit, index) => (
             <TextInput key={index} ref={ref => inputs.current[index] = ref}
@@ -73,17 +94,23 @@ export default function VerifyOTPScreen({ route, navigation }) {
               onKeyPress={e => handleKeyPress(e, index)} keyboardType="numeric" maxLength={1} selectTextOnFocus autoFocus={index === 0} />
           ))}
         </View>
+
         {loading && <ActivityIndicator color="#22C55E" style={{ marginBottom: 12 }} />}
+
         <TouchableOpacity style={styles.verifyBtn} onPress={() => handleVerify(otp.join(''))} disabled={loading || otp.some(d => !d)}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.verifyBtnText}>Verify Email</Text>}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.verifyBtnText}>Verify & Enter Wesoxch</Text>}
         </TouchableOpacity>
+
         <View style={styles.resendRow}>
           <Text style={styles.resendLabel}>Didn't get the code? </Text>
           <TouchableOpacity onPress={handleResend} disabled={countdown > 0 || resending}>
-            {resending ? <ActivityIndicator color={COCOA} size="small" /> : <Text style={[styles.resendBtn, countdown > 0 && { color: '#475569' }]}>{countdown > 0 ? `Resend in ${countdown}s` : 'Resend code'}</Text>}
+            {resending ? <ActivityIndicator color={COCOA} size="small" /> : <Text style={[styles.resendBtn, countdown > 0 && { color: '#475569' }]}>{countdown > 0 ? `Resend in ${countdown}s` : 'Resend'}</Text>}
           </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.backText}>← Back</Text></TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.backText}>← Back</Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -95,7 +122,11 @@ const styles = StyleSheet.create({
   logo: { fontSize: 32, fontWeight: 'bold', color: '#fff', marginBottom: 24 },
   title: { fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 8 },
   subtitle: { fontSize: 14, color: '#94A3B8' },
-  email: { fontSize: 14, color: '#22C55E', fontWeight: '600', marginTop: 4, marginBottom: 32 },
+  email: { fontSize: 14, color: '#22C55E', fontWeight: '600', marginTop: 4, marginBottom: 16 },
+  hintBox: { backgroundColor: '#1E293B', borderRadius: 14, padding: 16, marginBottom: 20, alignItems: 'center', borderWidth: 1, borderColor: '#22C55E', width: '100%' },
+  hintLabel: { color: '#94A3B8', fontSize: 12, marginBottom: 8 },
+  hintCode: { color: '#22C55E', fontSize: 36, fontWeight: '800', letterSpacing: 8 },
+  hintNote: { color: '#475569', fontSize: 10, marginTop: 8, textAlign: 'center' },
   otpRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
   otpInput: { width: 48, height: 56, borderRadius: 12, borderWidth: 2, borderColor: '#334155', backgroundColor: '#1E293B', textAlign: 'center', fontSize: 24, fontWeight: '700', color: '#fff' },
   otpInputFilled: { borderColor: '#22C55E' },

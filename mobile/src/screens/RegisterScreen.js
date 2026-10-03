@@ -24,8 +24,19 @@ export default function RegisterScreen({ navigation }) {
     if (mathAnswer.trim() !== challenge.answer) { Alert.alert('Wrong answer', `${challenge.question} = ${challenge.answer}`); refresh(); return; }
     setLoading(true);
     try {
-      const res = await api.post('/auth/register', { username: username.trim(), email: email.trim(), password, full_name: fullName.trim(), age: parseInt(age) });
-      if (res.data.requires_verification) navigation.navigate('VerifyOTP', { email: res.data.email || email.trim().toLowerCase() });
+      const res = await api.post('/auth/register', {
+        username: username.trim(),
+        email: email.trim(),
+        password,
+        full_name: fullName.trim(),
+        age: parseInt(age)
+      });
+      if (res.data.requires_verification) {
+        navigation.navigate('VerifyOTP', {
+          email: res.data.email || email.trim().toLowerCase(),
+          otpHint: res.data.otp_hint
+        });
+      }
     } catch (err) {
       Alert.alert('Registration failed', err.response?.data?.message || 'Check your connection.');
       refresh();

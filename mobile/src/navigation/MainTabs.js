@@ -1,25 +1,13 @@
 import React from 'react';
-import { View, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import PulseScreen from '../screens/PulseScreen';
+import CommunitiesScreen from '../screens/CommunitiesScreen';
+import SearchScreen from '../screens/SearchScreen';
+import EventsScreen from '../screens/EventsScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
-
-const COCOA = '#7B4F2E';
-
-const makeScreen = (name, icon) => () => (
-  <View style={{ flex: 1, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center' }}>
-    <Text style={{ fontSize: 40, marginBottom: 12 }}>{icon}</Text>
-    <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>{name}</Text>
-    <Text style={{ color: '#94A3B8', fontSize: 13, marginTop: 8 }}>Coming next!</Text>
-  </View>
-);
-
-const PulseScreen = makeScreen('Pulse Feed', '🌍');
-const CommunitiesScreen = makeScreen('Communities', '👥');
-const SearchScreen = makeScreen('Search', '🔍');
-const EventsScreen = makeScreen('Events', '📅');
-const ProfileScreen = makeScreen('Profile', '👤');
 
 export default function MainTabs() {
   return (
