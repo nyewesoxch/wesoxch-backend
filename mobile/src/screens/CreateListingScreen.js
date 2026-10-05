@@ -27,7 +27,7 @@ export default function CreateListingScreen({ navigation }) {
   useEffect(() => {
     Location.requestForegroundPermissionsAsync().then(({ status }) => {
       if (status === 'granted') {
-        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).then(loc => {
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null).then(loc => {
           setCoords(loc.coords);
           Location.reverseGeocodeAsync(loc.coords).then(geo => {
             if (geo[0]) setLocationName([geo[0].city, geo[0].region, geo[0].country].filter(Boolean).join(', '));
@@ -49,7 +49,7 @@ export default function CreateListingScreen({ navigation }) {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [4, 3], quality: 0.7 });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaType.Images, allowsEditing: true, aspect: [4, 3], quality: 0.7 });
     if (!result.canceled && result.assets[0]) setImages(prev => [...prev, result.assets[0]]);
   };
 

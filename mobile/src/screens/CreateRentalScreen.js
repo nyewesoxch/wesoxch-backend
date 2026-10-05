@@ -32,7 +32,8 @@ export default function CreateRentalScreen({ navigation }) {
   useEffect(() => {
     Location.requestForegroundPermissionsAsync().then(({ status }) => {
       if (status === 'granted') {
-        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).then(loc => {
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced, timeout: 10000 }).then(loc => {
+          if (!loc) return;
           setCoords(loc.coords);
           Location.reverseGeocodeAsync(loc.coords).then(geo => {
             if (geo[0]) {
@@ -59,7 +60,7 @@ export default function CreateRentalScreen({ navigation }) {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [4, 3], quality: 0.7 });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaType.Images, allowsEditing: true, aspect: [4, 3], quality: 0.7 });
     if (!result.canceled && result.assets[0]) setImages(prev => [...prev, result.assets[0]]);
   };
 

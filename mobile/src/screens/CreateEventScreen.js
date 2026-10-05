@@ -25,7 +25,8 @@ export default function CreateEventScreen({ navigation }) {
   useEffect(() => {
     Location.requestForegroundPermissionsAsync().then(({ status }) => {
       if (status === 'granted') {
-        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).then(loc => {
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced, timeout: 10000 }).then(loc => {
+          if (!loc) return;
           setCoords(loc.coords);
           Location.reverseGeocodeAsync(loc.coords).then(geo => {
             if (geo[0]) setLocationName([geo[0].city, geo[0].region, geo[0].country].filter(Boolean).join(', '));
