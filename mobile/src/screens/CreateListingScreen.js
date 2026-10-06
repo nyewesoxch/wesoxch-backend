@@ -49,7 +49,7 @@ export default function CreateListingScreen({ navigation }) {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaType.Images, allowsEditing: true, aspect: [4, 3], quality: 0.7 });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: { images: true }, allowsEditing: true, aspect: [4, 3], quality: 0.7 });
     if (!result.canceled && result.assets[0]) setImages(prev => [...prev, result.assets[0]]);
   };
 
