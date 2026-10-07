@@ -25,16 +25,17 @@ export default function CreateListingScreen({ navigation }) {
   const [uploadStep, setUploadStep] = useState('');
 
   useEffect(() => {
-    Location.requestForegroundPermissionsAsync().then(({ status }) => {
-      if (status === 'granted') {
-        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null).then(loc => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const loc = await Location.getCurrentPositionAsync({});
           setCoords(loc.coords);
-          Location.reverseGeocodeAsync(loc.coords).then(geo => {
-            if (geo[0]) setLocationName([geo[0].city, geo[0].region, geo[0].country].filter(Boolean).join(', '));
-          });
-        });
-      }
-    });
+          const geo = await Location.reverseGeocodeAsync(loc.coords);
+          if (geo[0]) setLocationName([geo[0].city, geo[0].region, geo[0].country].filter(Boolean).join(', '));
+        }
+      } catch (e) {}
+    })();
   }, []);
 
   const showImageOptions = () => {
@@ -50,20 +51,36 @@ export default function CreateListingScreen({ navigation }) {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
-    if (!result.canceled && result.assets[0]) setImages(prev => [...prev, result.assets[0]]);
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets && result.assets[0]) {
+      setImages(prev => [...prev, result.assets[0]]);
+    }
   };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed'); return; }
-    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.7 });
-    if (!result.canceled && result.assets[0]) setImages(prev => [...prev, result.assets[0]]);
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets && result.assets[0]) {
+      setImages(prev => [...prev, result.assets[0]]);
+    }
   };
 
   const uploadImage = async (imageAsset, token) => {
     const formData = new FormData();
     formData.append('images', { uri: imageAsset.uri, type: 'image/jpeg', name: `listing_${Date.now()}.jpg` });
-    const response = await fetch(`${BASE_SERVER_URL}/api/upload/listing`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+    const response = await fetch(`${BASE_SERVER_URL}/api/upload/listing`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
     const data = await response.json();
     if (data.success && data.urls && data.urls.length > 0) return data.urls[0];
     throw new Error('Upload failed');
@@ -81,10 +98,19 @@ export default function CreateListingScreen({ navigation }) {
         imageUrls.push(url);
       }
       setUploadStep('Saving listing...');
-      await api.post('/listings', { title, description, category, price: parseFloat(price) || 0, price_type: priceType, location_name: locationName, latitude: coords?.latitude || null, longitude: coords?.longitude || null, images: imageUrls });
+      await api.post('/listings', {
+        title, description, category,
+        price: parseFloat(price) || 0,
+        price_type: priceType,
+        location_name: locationName,
+        latitude: coords?.latitude || null,
+        longitude: coords?.longitude || null,
+        images: imageUrls,
+      });
       Alert.alert('Posted! 🎉', 'Your listing is now live!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
-    } catch (err) { Alert.alert('Error', `Could not post listing: ${err.message}`); }
-    finally { setLoading(false); setUploadStep(''); }
+    } catch (err) {
+      Alert.alert('Error', `Could not post listing: ${err.message}`);
+    } finally { setLoading(false); setUploadStep(''); }
   };
 
   return (
@@ -142,7 +168,8 @@ export default function CreateListingScreen({ navigation }) {
         <TextInput style={styles.input} value={locationName} onChangeText={setLocationName} placeholder="e.g. Kisumu CBD" placeholderTextColor="#64748B" />
         {coords && <Text style={styles.gpsTag}>📍 GPS attached automatically</Text>}
         <TouchableOpacity style={[styles.submitBtn, loading && styles.submitBtnDisabled]} onPress={handleSubmit} disabled={loading}>
-          {loading ? <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}><ActivityIndicator color="#fff" size="small" /><Text style={styles.submitBtnText}>{uploadStep || 'Posting...'}</Text></View>
+          {loading
+            ? <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}><ActivityIndicator color="#fff" size="small" /><Text style={styles.submitBtnText}>{uploadStep || 'Posting...'}</Text></View>
             : <Text style={styles.submitBtnText}>Post Listing</Text>}
         </TouchableOpacity>
       </ScrollView>

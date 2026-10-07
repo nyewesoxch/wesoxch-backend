@@ -30,20 +30,20 @@ export default function CreateRentalScreen({ navigation }) {
   const [uploadStep, setUploadStep] = useState('');
 
   useEffect(() => {
-    Location.requestForegroundPermissionsAsync().then(({ status }) => {
-      if (status === 'granted') {
-        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced, timeout: 10000 }).then(loc => {
-          if (!loc) return;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const loc = await Location.getCurrentPositionAsync({});
           setCoords(loc.coords);
-          Location.reverseGeocodeAsync(loc.coords).then(geo => {
-            if (geo[0]) {
-              setLocationName([geo[0].city, geo[0].region, geo[0].country].filter(Boolean).join(', '));
-              setAreaName(geo[0].city || geo[0].district || '');
-            }
-          });
-        });
-      }
-    });
+          const geo = await Location.reverseGeocodeAsync(loc.coords);
+          if (geo[0]) {
+            setLocationName([geo[0].city, geo[0].region, geo[0].country].filter(Boolean).join(', '));
+            setAreaName(geo[0].city || geo[0].district || '');
+          }
+        }
+      } catch (e) {}
+    })();
   }, []);
 
   const toggleAmenity = (a) => setSelectedAmenities(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
@@ -61,20 +61,36 @@ export default function CreateRentalScreen({ navigation }) {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
-    if (!result.canceled && result.assets[0]) setImages(prev => [...prev, result.assets[0]]);
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets && result.assets[0]) {
+      setImages(prev => [...prev, result.assets[0]]);
+    }
   };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed'); return; }
-    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.7 });
-    if (!result.canceled && result.assets[0]) setImages(prev => [...prev, result.assets[0]]);
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets && result.assets[0]) {
+      setImages(prev => [...prev, result.assets[0]]);
+    }
   };
 
   const uploadImage = async (imageAsset, token) => {
     const formData = new FormData();
     formData.append('images', { uri: imageAsset.uri, type: 'image/jpeg', name: `rental_${Date.now()}.jpg` });
-    const response = await fetch(`${BASE_SERVER_URL}/api/upload/rental`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+    const response = await fetch(`${BASE_SERVER_URL}/api/upload/rental`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
     const data = await response.json();
     if (data.success && data.urls && data.urls.length > 0) return data.urls[0];
     throw new Error('Upload failed');
@@ -93,10 +109,26 @@ export default function CreateRentalScreen({ navigation }) {
         imageUrls.push(url);
       }
       setUploadStep('Saving listing...');
-      await api.post('/rentals', { title, description, property_type: propertyType, rent_amount: parseFloat(rentAmount), deposit_amount: parseFloat(depositAmount) || 0, bedrooms: parseInt(bedrooms) || 1, bathrooms: parseInt(bathrooms) || 1, amenities: selectedAmenities, location_name: locationName, area_name: areaName, landlord_phone: landlordPhone, landlord_whatsapp: landlordWhatsapp, latitude: coords?.latitude || null, longitude: coords?.longitude || null, images: imageUrls });
+      await api.post('/rentals', {
+        title, description,
+        property_type: propertyType,
+        rent_amount: parseFloat(rentAmount),
+        deposit_amount: parseFloat(depositAmount) || 0,
+        bedrooms: parseInt(bedrooms) || 1,
+        bathrooms: parseInt(bathrooms) || 1,
+        amenities: selectedAmenities,
+        location_name: locationName,
+        area_name: areaName,
+        landlord_phone: landlordPhone,
+        landlord_whatsapp: landlordWhatsapp,
+        latitude: coords?.latitude || null,
+        longitude: coords?.longitude || null,
+        images: imageUrls,
+      });
       Alert.alert('Listed! 🎉', 'Your rental is now live.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
-    } catch (err) { Alert.alert('Error', `Could not post rental: ${err.message}`); }
-    finally { setLoading(false); setUploadStep(''); }
+    } catch (err) {
+      Alert.alert('Error', `Could not post rental: ${err.message}`);
+    } finally { setLoading(false); setUploadStep(''); }
   };
 
   return (
@@ -174,7 +206,8 @@ export default function CreateRentalScreen({ navigation }) {
         <Text style={styles.label}>WhatsApp Number</Text>
         <TextInput style={styles.input} value={landlordWhatsapp} onChangeText={setLandlordWhatsapp} placeholder="+254..." placeholderTextColor="#64748B" keyboardType="phone-pad" />
         <TouchableOpacity style={[styles.submitBtn, loading && styles.submitBtnDisabled]} onPress={handleSubmit} disabled={loading}>
-          {loading ? <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}><ActivityIndicator color="#fff" size="small" /><Text style={styles.submitBtnText}>{uploadStep || 'Posting...'}</Text></View>
+          {loading
+            ? <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}><ActivityIndicator color="#fff" size="small" /><Text style={styles.submitBtnText}>{uploadStep || 'Posting...'}</Text></View>
             : <Text style={styles.submitBtnText}>List Rental</Text>}
         </TouchableOpacity>
       </ScrollView>
