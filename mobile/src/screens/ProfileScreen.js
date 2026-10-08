@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, ScrollView, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -26,8 +27,11 @@ export default function ProfileScreen({ navigation }) {
 
   const formatMemberSince = (dateStr) => {
     if (!dateStr) return 'Unknown';
-    try { const d = new Date(dateStr); if (isNaN(d.getTime())) return 'Unknown'; return d.toLocaleDateString('en-KE', { month: 'long', year: 'numeric' }); }
-    catch (e) { return 'Unknown'; }
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return 'Unknown';
+      return d.toLocaleDateString('en-KE', { month: 'long', year: 'numeric' });
+    } catch (e) { return 'Unknown'; }
   };
 
   const showAvatarOptions = () => Alert.alert('Profile Picture', 'Choose an option', [
@@ -37,17 +41,33 @@ export default function ProfileScreen({ navigation }) {
   ]);
 
   const handlePickAvatar = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({
-    if (!result.canceled && result.assets[0]) await uploadAvatar(result.assets[0]);
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permission needed'); return; }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets && result.assets[0]) {
+        await uploadAvatar(result.assets[0]);
+      }
+    } catch (e) { Alert.alert('Error', 'Could not open gallery'); }
   };
 
   const handleTakePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed'); return; }
-    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 });
-    if (!result.canceled && result.assets[0]) await uploadAvatar(result.assets[0]);
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permission needed'); return; }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets && result.assets[0]) {
+        await uploadAvatar(result.assets[0]);
+      }
+    } catch (e) { Alert.alert('Error', 'Could not open camera'); }
   };
 
   const uploadAvatar = async (imageAsset) => {
@@ -56,7 +76,11 @@ export default function ProfileScreen({ navigation }) {
       const token = await SecureStore.getItemAsync('wesoxch_token');
       const formData = new FormData();
       formData.append('avatar', { uri: imageAsset.uri, type: 'image/jpeg', name: 'avatar.jpg' });
-      const response = await fetch(`${BASE_SERVER_URL}/api/upload/avatar`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+      const response = await fetch(`${BASE_SERVER_URL}/api/upload/avatar`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
       const data = await response.json();
       if (data.success) { setUser(data.user); Alert.alert('Done!', 'Profile picture updated.'); }
       else Alert.alert('Error', 'Could not upload image.');
@@ -68,7 +92,11 @@ export default function ProfileScreen({ navigation }) {
     if (!fullName.trim()) { Alert.alert('Required', 'Full name cannot be empty'); return; }
     setSaving(true);
     try {
-      const res = await api.patch('/users/profile', { full_name: fullName.trim(), bio: bio.trim(), phone: phone.trim() });
+      const res = await api.patch('/users/profile', {
+        full_name: fullName.trim(),
+        bio: bio.trim(),
+        phone: phone.trim(),
+      });
       setUser({ ...user, ...res.data.user });
       setEditing(false);
       Alert.alert('Saved!', 'Profile updated.');
@@ -82,14 +110,18 @@ export default function ProfileScreen({ navigation }) {
   ]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.header}><Text style={styles.headerTitle}>👤 Profile</Text></View>
+
         <View style={styles.avatarSection}>
           <TouchableOpacity style={styles.avatarWrapper} onPress={showAvatarOptions}>
-            {uploadingAvatar ? <View style={styles.avatar}><ActivityIndicator color="#fff" size="large" /></View>
-              : user?.avatar_url ? <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
-              : <View style={styles.avatar}><Text style={styles.avatarText}>{(user?.full_name || user?.username || '?').charAt(0).toUpperCase()}</Text></View>}
+            {uploadingAvatar
+              ? <View style={styles.avatar}><ActivityIndicator color="#fff" size="large" /></View>
+              : user?.avatar_url
+                ? <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
+                : <View style={styles.avatar}><Text style={styles.avatarText}>{(user?.full_name || user?.username || '?').charAt(0).toUpperCase()}</Text></View>
+            }
             <View style={styles.cameraIcon}><Ionicons name="camera" size={14} color="#fff" /></View>
           </TouchableOpacity>
           <Text style={styles.avatarHint}>Tap to change photo</Text>
@@ -118,23 +150,31 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="heart" size={20} color="#8B5CF6" />
             <Text style={styles.quickBtnText}>Therapy</Text>
           </TouchableOpacity>
-          {user?.is_seller ? (
-            <TouchableOpacity style={styles.quickBtn} onPress={() => navigation.navigate('MyListings')}>
-              <Ionicons name="storefront" size={20} color={COCOA} />
-              <Text style={styles.quickBtnText}>Listings</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity style={styles.quickBtn} onPress={() => navigation.navigate('BecomeSeller')}>
-              <Ionicons name="storefront-outline" size={20} color={COCOA} />
-              <Text style={styles.quickBtnText}>Sell Here</Text>
-            </TouchableOpacity>
-          )}
+          {user?.is_seller
+            ? <TouchableOpacity style={styles.quickBtn} onPress={() => navigation.navigate('MyListings')}>
+                <Ionicons name="storefront" size={20} color={COCOA} />
+                <Text style={styles.quickBtnText}>Listings</Text>
+              </TouchableOpacity>
+            : <TouchableOpacity style={styles.quickBtn} onPress={() => navigation.navigate('BecomeSeller')}>
+                <Ionicons name="storefront-outline" size={20} color={COCOA} />
+                <Text style={styles.quickBtnText}>Sell Here</Text>
+              </TouchableOpacity>
+          }
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Personal Info</Text>
-            {!editing && <TouchableOpacity onPress={() => { setFullName(user?.full_name || ''); setBio(user?.bio || ''); setPhone(user?.phone || ''); setEditing(true); }}><Text style={styles.editBtn}>Edit</Text></TouchableOpacity>}
+            {!editing && (
+              <TouchableOpacity onPress={() => {
+                setFullName(user?.full_name || '');
+                setBio(user?.bio || '');
+                setPhone(user?.phone || '');
+                setEditing(true);
+              }}>
+                <Text style={styles.editBtn}>Edit</Text>
+              </TouchableOpacity>
+            )}
           </View>
           {editing ? (
             <>
@@ -145,7 +185,9 @@ export default function ProfileScreen({ navigation }) {
               <Text style={styles.label}>Phone</Text>
               <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="+254..." placeholderTextColor="#64748B" keyboardType="phone-pad" />
               <View style={styles.editActions}>
-                <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditing(false)}><Text style={styles.cancelBtnText}>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditing(false)}>
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
                   {saving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
                 </TouchableOpacity>
@@ -176,7 +218,7 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0F172A' },
   scroll: { padding: 16, paddingBottom: 40 },
-  header: { paddingTop: 40, paddingBottom: 16 },
+  header: { paddingTop: 16, paddingBottom: 16 },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
   avatarSection: { alignItems: 'center', marginBottom: 16 },
   avatarWrapper: { position: 'relative', marginBottom: 8 },
