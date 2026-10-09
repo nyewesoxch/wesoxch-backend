@@ -85,7 +85,7 @@ export default function CreateRentalScreen({ navigation }) {
 
   const uploadImage = async (imageAsset, token) => {
     const formData = new FormData();
-    formData.append('images', { uri: imageAsset.uri, type: 'image/jpeg', name: `rental_${Date.now()}.jpg` });
+    formData.append('images', { uri: imageAsset.uri, type: imageAsset.type || 'image/jpeg', name: imageAsset.fileName || `rental_${Date.now()}.jpg` } as any);
     const response = await fetch(`${BASE_SERVER_URL}/api/upload/rental`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },

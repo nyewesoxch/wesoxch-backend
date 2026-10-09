@@ -75,7 +75,7 @@ export default function CreateListingScreen({ navigation }) {
 
   const uploadImage = async (imageAsset, token) => {
     const formData = new FormData();
-    formData.append('images', { uri: imageAsset.uri, type: 'image/jpeg', name: `listing_${Date.now()}.jpg` });
+    formData.append('images', { uri: imageAsset.uri, type: imageAsset.type || 'image/jpeg', name: imageAsset.fileName || `listing_${Date.now()}.jpg` } as any);
     const response = await fetch(`${BASE_SERVER_URL}/api/upload/listing`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
