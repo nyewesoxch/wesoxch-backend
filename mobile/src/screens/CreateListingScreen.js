@@ -74,12 +74,16 @@ export default function CreateListingScreen({ navigation }) {
   };
 
   const uploadImage = async (imageAsset, token) => {
-    const formData = new FormData();
-    formData.append('images', { uri: imageAsset.uri, type: imageAsset.type || 'image/jpeg', name: imageAsset.fileName || `listing_${Date.now()}.jpg` } as any);
-    const response = await fetch(`${BASE_SERVER_URL}/api/upload/listing`, {
+    const uri = imageAsset.uri;
+    const name = uri.split('/').pop() || 'photo.jpg';
+    const ext = (name.split('.').pop() || 'jpg').toLowerCase();
+    const type = 'image/' + ext;
+    const body = new FormData();
+    body.append('images', { uri: uri, name: name, type: type });
+    const response = await fetch(BASE_SERVER_URL + '/api/upload/listing', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
+      headers: { Authorization: 'Bearer ' + token },
+      body: body,
     });
     const data = await response.json();
     if (data.success && data.urls && data.urls.length > 0) return data.urls[0];
@@ -93,7 +97,7 @@ export default function CreateListingScreen({ navigation }) {
       const token = await SecureStore.getItemAsync('wesoxch_token');
       const imageUrls = [];
       for (let i = 0; i < images.length; i++) {
-        setUploadStep(`Uploading photo ${i+1} of ${images.length}...`);
+        setUploadStep('Uploading photo ' + (i + 1) + ' of ' + images.length + '...');
         const url = await uploadImage(images[i], token);
         imageUrls.push(url);
       }
@@ -103,13 +107,13 @@ export default function CreateListingScreen({ navigation }) {
         price: parseFloat(price) || 0,
         price_type: priceType,
         location_name: locationName,
-        latitude: coords?.latitude || null,
-        longitude: coords?.longitude || null,
+        latitude: coords ? coords.latitude : null,
+        longitude: coords ? coords.longitude : null,
         images: imageUrls,
       });
-      Alert.alert('Posted! 🎉', 'Your listing is now live!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+      Alert.alert('Posted!', 'Your listing is now live!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
     } catch (err) {
-      Alert.alert('Error', `Could not post listing: ${err.message}`);
+      Alert.alert('Error', 'Could not post listing: ' + err.message);
     } finally { setLoading(false); setUploadStep(''); }
   };
 
@@ -166,10 +170,13 @@ export default function CreateListingScreen({ navigation }) {
         )}
         <Text style={styles.label}>Location</Text>
         <TextInput style={styles.input} value={locationName} onChangeText={setLocationName} placeholder="e.g. Kisumu CBD" placeholderTextColor="#64748B" />
-        {coords && <Text style={styles.gpsTag}>📍 GPS attached automatically</Text>}
+        {coords && <Text style={styles.gpsTag}>GPS attached automatically</Text>}
         <TouchableOpacity style={[styles.submitBtn, loading && styles.submitBtnDisabled]} onPress={handleSubmit} disabled={loading}>
           {loading
-            ? <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}><ActivityIndicator color="#fff" size="small" /><Text style={styles.submitBtnText}>{uploadStep || 'Posting...'}</Text></View>
+            ? <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <ActivityIndicator color="#fff" size="small" />
+                <Text style={styles.submitBtnText}>{uploadStep || 'Posting...'}</Text>
+              </View>
             : <Text style={styles.submitBtnText}>Post Listing</Text>}
         </TouchableOpacity>
       </ScrollView>

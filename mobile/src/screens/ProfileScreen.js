@@ -75,7 +75,7 @@ export default function ProfileScreen({ navigation }) {
     try {
       const token = await SecureStore.getItemAsync('wesoxch_token');
       const formData = new FormData();
-      formData.append('avatar', { uri: imageAsset.uri, type: imageAsset.type || 'image/jpeg', name: imageAsset.fileName || 'avatar.jpg' } as any);
+      formData.append('avatar', { uri: imageAsset.uri, type: imageAsset.type || 'image/jpeg', name: imageAsset.fileName || 'avatar.jpg' });
       const response = await fetch(`${BASE_SERVER_URL}/api/upload/avatar`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
