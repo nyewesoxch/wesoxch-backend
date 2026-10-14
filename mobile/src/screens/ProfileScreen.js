@@ -70,22 +70,44 @@ export default function ProfileScreen({ navigation }) {
     } catch (e) { Alert.alert('Error', 'Could not open camera'); }
   };
 
-  const uploadAvatar = async (imageAsset) => {
+const uploadAvatar = async (imageAsset) => {
     setUploadingAvatar(true);
     try {
       const token = await SecureStore.getItemAsync('wesoxch_token');
-      const formData = new FormData();
-      formData.append('avatar', { uri: imageAsset.uri, type: imageAsset.type || 'image/jpeg', name: imageAsset.fileName || 'avatar.jpg' });
-      const response = await fetch(`${BASE_SERVER_URL}/api/upload/avatar`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+      const uri = imageAsset.uri;
+      const name = uri.split('/').pop() || 'avatar.jpg';
+      const ext = (name.split('.').pop() || 'jpg').toLowerCase();
+      const type = 'image/' + ext;
+
+      const result = await new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('avatar', { uri, name, type });
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', BASE_SERVER_URL + '/api/upload/avatar');
+        xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+        xhr.onload = () => {
+          try {
+            resolve(JSON.parse(xhr.responseText));
+          } catch (e) {
+            reject(new Error('Parse error'));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Network error'));
+        xhr.send(formData);
       });
-      const data = await response.json();
-      if (data.success) { setUser(data.user); Alert.alert('Done!', 'Profile picture updated.'); }
-      else Alert.alert('Error', 'Could not upload image.');
-    } catch (err) { Alert.alert('Error', 'Could not upload image.'); }
-    finally { setUploadingAvatar(false); }
+
+      if (result.success) {
+        setUser(result.user);
+        Alert.alert('Done!', 'Profile picture updated.');
+      } else {
+        Alert.alert('Error', 'Could not upload image.');
+      }
+    } catch (err) {
+      Alert.alert('Error', err.message || 'Could not upload image.');
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handleSave = async () => {

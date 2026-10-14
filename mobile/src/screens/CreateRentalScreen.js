@@ -83,17 +83,34 @@ export default function CreateRentalScreen({ navigation }) {
     }
   };
 
-  const uploadImage = async (imageAsset, token) => {
-    const formData = new FormData();
-    formData.append('images', { uri: imageAsset.uri, type: imageAsset.type || 'image/jpeg', name: imageAsset.fileName || `rental_${Date.now()}.jpg` });
-    const response = await fetch(`${BASE_SERVER_URL}/api/upload/rental`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
+const uploadImage = async (imageAsset, token) => {
+    return new Promise((resolve, reject) => {
+      const uri = imageAsset.uri;
+      const name = uri.split('/').pop() || 'photo.jpg';
+      const ext = (name.split('.').pop() || 'jpg').toLowerCase();
+      const type = 'image/' + ext;
+
+      const formData = new FormData();
+      formData.append('images', { uri, name, type });
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', BASE_SERVER_URL + '/api/upload/rental');
+      xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+      xhr.onload = () => {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data.success && data.urls && data.urls.length > 0) {
+            resolve(data.urls[0]);
+          } else {
+            reject(new Error('Upload failed: ' + xhr.responseText));
+          }
+        } catch (e) {
+          reject(new Error('Parse error: ' + xhr.responseText));
+        }
+      };
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.send(formData);
     });
-    const data = await response.json();
-    if (data.success && data.urls && data.urls.length > 0) return data.urls[0];
-    throw new Error('Upload failed');
   };
 
   const handleSubmit = async () => {

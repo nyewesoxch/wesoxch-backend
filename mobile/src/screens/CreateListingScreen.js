@@ -73,21 +73,34 @@ export default function CreateListingScreen({ navigation }) {
     }
   };
 
-  const uploadImage = async (imageAsset, token) => {
-    const uri = imageAsset.uri;
-    const name = uri.split('/').pop() || 'photo.jpg';
-    const ext = (name.split('.').pop() || 'jpg').toLowerCase();
-    const type = 'image/' + ext;
-    const body = new FormData();
-    body.append('images', { uri: uri, name: name, type: type });
-    const response = await fetch(BASE_SERVER_URL + '/api/upload/listing', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + token },
-      body: body,
+const uploadImage = async (imageAsset, token) => {
+    return new Promise((resolve, reject) => {
+      const uri = imageAsset.uri;
+      const name = uri.split('/').pop() || 'photo.jpg';
+      const ext = (name.split('.').pop() || 'jpg').toLowerCase();
+      const type = 'image/' + ext;
+
+      const formData = new FormData();
+      formData.append('images', { uri, name, type });
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', BASE_SERVER_URL + '/api/upload/listing');
+      xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+      xhr.onload = () => {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data.success && data.urls && data.urls.length > 0) {
+            resolve(data.urls[0]);
+          } else {
+            reject(new Error('Upload failed: ' + xhr.responseText));
+          }
+        } catch (e) {
+          reject(new Error('Parse error: ' + xhr.responseText));
+        }
+      };
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.send(formData);
     });
-    const data = await response.json();
-    if (data.success && data.urls && data.urls.length > 0) return data.urls[0];
-    throw new Error('Upload failed');
   };
 
   const handleSubmit = async () => {
