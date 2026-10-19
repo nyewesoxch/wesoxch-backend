@@ -34,7 +34,6 @@ export default function RegisterScreen({ navigation }) {
       if (res.data.requires_verification) {
         navigation.navigate('VerifyOTP', {
           email: res.data.email || email.trim().toLowerCase(),
-          otpHint: res.data.otp_hint
         });
       }
     } catch (err) {

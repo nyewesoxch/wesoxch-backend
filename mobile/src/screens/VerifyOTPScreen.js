@@ -7,7 +7,7 @@ import * as SecureStore from 'expo-secure-store';
 const COCOA = '#7B4F2E';
 
 export default function VerifyOTPScreen({ route, navigation }) {
-  const { email, otpHint } = route.params;
+  const { email } = route.params;
   const { setUser } = useAuth();
   const [otp, setOtp] = useState(['','','','','','']);
   const [loading, setLoading] = useState(false);
@@ -20,13 +20,7 @@ export default function VerifyOTPScreen({ route, navigation }) {
     return () => clearInterval(timer);
   }, []);
 
-  // Auto fill OTP if hint provided
-  useEffect(() => {
-    if (otpHint && otpHint.length === 6) {
-      const digits = otpHint.split('');
-      setOtp(digits);
-    }
-  }, [otpHint]);
+
 
   const handleOtpChange = (text, index) => {
     const newOtp = [...otp];
@@ -77,14 +71,6 @@ export default function VerifyOTPScreen({ route, navigation }) {
         <Text style={styles.title}>Verify your account</Text>
         <Text style={styles.subtitle}>Enter the 6-digit code for</Text>
         <Text style={styles.email}>{email}</Text>
-
-        {otpHint && (
-          <View style={styles.hintBox}>
-            <Text style={styles.hintLabel}>📋 Your verification code:</Text>
-            <Text style={styles.hintCode}>{otpHint}</Text>
-            <Text style={styles.hintNote}>(Email delivery unavailable — code shown here)</Text>
-          </View>
-        )}
 
         <View style={styles.otpRow}>
           {otp.map((digit, index) => (
