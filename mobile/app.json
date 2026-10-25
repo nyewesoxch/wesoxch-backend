@@ -1,45 +1,31 @@
 {
   "expo": {
-    "name": "Wesoxch",
-    "slug": "wesoxch",
+    "name": "mobile",
+    "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0F172A"
-      },
-      "package": "com.wesoxch.app",
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES"
-      ]
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Wesoxch needs access to your photos to upload images.",
-          "cameraPermission": "Wesoxch needs access to your camera to take photos."
-        }
-      ],
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Wesoxch uses your location to show nearby events, communities and rentals."
-        }
-      ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "880e477b-62ef-4442-8477-00e407c86732"
-      }
-    }
+      "expo-secure-store",
+      "expo-font",
+      "expo-splash-screen",
+      "expo-status-bar",
+      "@react-native-community/datetimepicker"
+    ]
   }
 }

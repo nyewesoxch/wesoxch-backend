@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
         const res = await api.get('/auth/me');
         setUser(res.data.user);
       }
-    } catch (err) {
+    } catch {
       await SecureStore.deleteItemAsync('wesoxch_token');
     } finally { setLoading(false); }
   };
@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.get('/notifications/unread-count');
       setUnreadCount(res.data.count || 0);
-    } catch (err) {}
+    } catch {}
   };
 
   const login = async (email, password) => {
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const markNotificationsRead = async () => {
-    try { await api.post('/notifications/mark-read'); setUnreadCount(0); } catch (e) {}
+    try { await api.post('/notifications/mark-read'); setUnreadCount(0); } catch {}
   };
 
   return (
