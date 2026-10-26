@@ -1,31 +1,47 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "Wesoxch",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true
-    },
+    "userInterfaceStyle": "dark",
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0A0F"
+      },
+      "package": "com.wesoxch.app",
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
-      "expo-secure-store",
-      "expo-font",
-      "expo-splash-screen",
-      "expo-status-bar",
-      "@react-native-community/datetimepicker"
-    ]
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Wesoxch needs access to your photos to upload images.",
+          "cameraPermission": "Wesoxch needs access to your camera to take photos."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Wesoxch uses your location to show nearby events, communities and rentals."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "920b1611-252e-4358-9711-ad09476f1791"
+      }
+    },
+    "owner": "nelsonwesoxch"
   }
 }
