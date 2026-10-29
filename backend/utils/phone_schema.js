@@ -1,13 +1,32 @@
 const pool = require('../config/db');
 
 const addPhoneColumns = async () => {
+  const client = await pool.connect();
   try {
-    await pool.query(`
+    console.log('Connected to database...');
+    
+    // Create uuid extension
+    await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";');
+    console.log('UUID extension ready');
+
+    // Add phone columns to users
+    await client.query(`
       ALTER TABLE users 
-      ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20) UNIQUE,
+      ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20),
       ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT FALSE;
     `);
-    await pool.query(`
+    console.log('Phone columns added to users');
+
+    // Add unique index separately (safer)
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone 
+      ON users(phone_number) 
+      WHERE phone_number IS NOT NULL;
+    `);
+    console.log('Phone index created');
+
+    // Create phone_otps table
+    await client.query(`
       CREATE TABLE IF NOT EXISTS phone_otps (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         phone VARCHAR(20) NOT NULL,
@@ -16,9 +35,16 @@ const addPhoneColumns = async () => {
         used BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
-      CREATE INDEX IF NOT EXISTS idx_phone_otps ON phone_otps(phone);
     `);
-    await pool.query(`
+    console.log('phone_otps table ready');
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_phone_otps_phone 
+      ON phone_otps(phone);
+    `);
+
+    // Create community_requests table
+    await client.query(`
       CREATE TABLE IF NOT EXISTS community_requests (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -32,7 +58,10 @@ const addPhoneColumns = async () => {
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
     `);
-    await pool.query(`
+    console.log('community_requests table ready');
+
+    // Create premium_subscriptions table
+    await client.query(`
       CREATE TABLE IF NOT EXISTS premium_subscriptions (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         user_id UUID REFERENCES users(id) ON DELETE CASCADE UNIQUE,
@@ -42,10 +71,22 @@ const addPhoneColumns = async () => {
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
     `);
-    console.log('Phone schema updated successfully');
+    console.log('premium_subscriptions table ready');
+
+    console.log('');
+    console.log('ALL SCHEMA UPDATES COMPLETE');
+    
   } catch (err) {
-    console.error('Schema error:', err.message);
+    console.error('Schema error details:');
+    console.error('Message:', err.message);
+    console.error('Code:', err.code);
+    console.error('Detail:', err.detail);
+    console.error('Full error:', JSON.stringify(err, null, 2));
+  } finally {
+    client.release();
+    await pool.end();
+    process.exit(0);
   }
 };
 
-addPhoneColumns().then(() => process.exit(0));
+addPhoneColumns();
