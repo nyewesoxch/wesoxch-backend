@@ -6,11 +6,9 @@ import * as SecureStore from 'expo-secure-store';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { colors } from './src/theme/colors';
 
-import OnboardingScreen from './src/screens/OnboardingScreen';
-import LoginScreen from './src/screens/LoginScreen';
-import RegisterScreen from './src/screens/RegisterScreen';
-import VerifyOTPScreen from './src/screens/VerifyOTPScreen';
-import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import PhoneAuthScreen from './src/screens/PhoneAuthScreen';
+import VerifyPhoneScreen from './src/screens/VerifyPhoneScreen';
+import SetupProfileScreen from './src/screens/SetupProfileScreen';
 import MainTabs from './src/navigation/MainTabs';
 
 import CommunityChatScreen from './src/screens/CommunityChatScreen';
@@ -32,22 +30,13 @@ const Stack = createNativeStackNavigator();
 
 function RootNavigator() {
   const { user, loading } = useAuth();
-  const [onboarded, setOnboarded] = useState(null);
 
-  useEffect(() => {
-    SecureStore.getItemAsync('wesoxch_onboarded').then(val => setOnboarded(val === 'true'));
-  }, []);
-
-  if (loading || onboarded === null) {
+  if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
-  }
-
-  if (!onboarded && !user) {
-    return <OnboardingScreen onFinish={() => setOnboarded(true)} />;
   }
 
   return (
@@ -72,10 +61,9 @@ function RootNavigator() {
         </>
       ) : (
         <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          <Stack.Screen name="PhoneAuth" component={PhoneAuthScreen} />
+          <Stack.Screen name="VerifyPhone" component={VerifyPhoneScreen} />
+          <Stack.Screen name="SetupProfile" component={SetupProfileScreen} />
         </>
       )}
     </Stack.Navigator>

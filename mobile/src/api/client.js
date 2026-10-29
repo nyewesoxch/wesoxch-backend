@@ -1,8 +1,12 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const BASE_URL = 'https://wesoxch-backend-production.up.railway.app/api';
-export const BASE_SERVER_URL = 'https://wesoxch-backend-production.up.railway.app';
+// Switch between local and production
+const LOCAL = 'http://92.168.1.178:5000/api';
+const PROD = 'https://wesoxch-backend.onrender.com/api';
+
+const BASE_URL = LOCAL;
+export const BASE_SERVER_URL = 'http://92.168.1.178:5000';
 
 const api = axios.create({
   baseURL: BASE_URL,

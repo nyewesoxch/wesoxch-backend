@@ -16,15 +16,19 @@ export default function MainTabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.bgCard,
+          backgroundColor: colors.background,
           borderTopColor: colors.border,
           paddingBottom: 6,
           paddingTop: 6,
-          height: 62,
+          height: 60,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
         },
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+        tabBarInactiveTintColor: colors.muted,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
         tabBarIcon: ({ focused, color }) => {
           const icons = {
             Pulse: focused ? 'radio' : 'radio-outline',
