@@ -2,11 +2,11 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 // Switch between local and production
-const LOCAL = 'http://92.168.1.178:5000/api';
+const LOCAL = 'http://localhost:5000/api';
 const PROD = 'https://wesoxch-backend.onrender.com/api';
 
 const BASE_URL = LOCAL;
-export const BASE_SERVER_URL = 'http://92.168.1.178:5000';
+export const BASE_SERVER_URL = 'http://localhost:5000';
 
 const api = axios.create({
   baseURL: BASE_URL,

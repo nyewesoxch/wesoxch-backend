@@ -36,7 +36,7 @@ export default function PhoneAuthScreen({ navigation }) {
         otpHint: res.data.otp_hint,
       });
     } catch (err) {
-      setError(err.response?.data?.message || 'Could not send code. Check your connection.');
+      setError(err.response?.data?.message || ('Could not reach the server (' + err.message + ')'));
     } finally {
       setLoading(false);
     }

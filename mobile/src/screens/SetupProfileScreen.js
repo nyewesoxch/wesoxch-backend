@@ -10,7 +10,22 @@ import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 
-export default function SetupProfileScreen({ route, navigation }) {
+// Defined outside the screen so the text box keeps focus while typing
+function Field({ label, error, ...props }) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput
+        style={[styles.input, error && styles.inputError]}
+        placeholderTextColor={colors.muted}
+        {...props}
+      />
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+    </View>
+  );
+}
+
+export default function SetupProfileScreen({ route }) {
   const { phone } = route.params;
   const { setUser } = useAuth();
   const [fullName, setFullName] = useState('');
@@ -19,14 +34,19 @@ export default function SetupProfileScreen({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  const clearError = (key) => {
+    if (errors[key]) setErrors(e => ({ ...e, [key]: undefined }));
+  };
+
   const validate = () => {
     const e = {};
+    const u = username.trim();
     if (!fullName.trim()) e.fullName = 'Your name is required';
-    if (!username.trim()) e.username = 'Choose a username';
-    if (username.trim().length < 3) e.username = 'Username must be at least 3 characters';
-    if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) e.username = 'Letters, numbers and underscores only';
+    if (!u) e.username = 'Choose a username';
+    else if (u.length < 3) e.username = 'Username must be at least 3 characters';
+    else if (!/^[a-zA-Z0-9_]+$/.test(u)) e.username = 'Letters, numbers and underscores only';
     if (!age) e.age = 'Your age is required';
-    if (parseInt(age) < 13) e.age = 'You must be at least 13 years old';
+    else if (parseInt(age) < 13) e.age = 'You must be at least 13 years old';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -45,7 +65,7 @@ export default function SetupProfileScreen({ route, navigation }) {
       setUser(res.data.user);
     } catch (err) {
       const msg = err.response?.data?.message || 'Could not save profile.';
-      if (msg.includes('username')) {
+      if (msg.toLowerCase().includes('username')) {
         setErrors(e => ({ ...e, username: 'This username is taken' }));
       } else {
         Alert.alert('Something went wrong', msg);
@@ -54,20 +74,6 @@ export default function SetupProfileScreen({ route, navigation }) {
       setLoading(false);
     }
   };
-
-  const Field = ({ label, value, setter, error, ...props }) => (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={[styles.input, error && styles.inputError]}
-        value={value}
-        onChangeText={t => { setter(t); setErrors(e => ({ ...e })); }}
-        placeholderTextColor={colors.muted}
-        {...props}
-      />
-      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
-    </View>
-  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -78,15 +84,13 @@ export default function SetupProfileScreen({ route, navigation }) {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>Set up your profile</Text>
-        <Text style={styles.subtitle}>
-          Tell the community a little about yourself.
-        </Text>
+        <Text style={styles.subtitle}>Tell the community a little about yourself.</Text>
 
         <View style={styles.form}>
           <Field
             label="Your full name"
             value={fullName}
-            setter={setFullName}
+            onChangeText={t => { setFullName(t); clearError('fullName'); }}
             error={errors.fullName}
             placeholder="e.g. Atieno Ochieng"
             autoCapitalize="words"
@@ -94,23 +98,22 @@ export default function SetupProfileScreen({ route, navigation }) {
           <Field
             label="Username"
             value={username}
-            setter={setUsername}
+            onChangeText={t => { setUsername(t); clearError('username'); }}
             error={errors.username}
             placeholder="e.g. atieno_k"
             autoCapitalize="none"
+            autoCorrect={false}
           />
           <Field
             label="Your age"
             value={age}
-            setter={setAge}
+            onChangeText={t => { setAge(t); clearError('age'); }}
             error={errors.age}
             placeholder="e.g. 24"
             keyboardType="numeric"
             maxLength={3}
           />
-          <Text style={styles.ageNote}>
-            You must be at least 13 to use Wesoxch.
-          </Text>
+          <Text style={styles.ageNote}>You must be at least 13 to use Wesoxch.</Text>
         </View>
 
         <TouchableOpacity
@@ -131,31 +134,20 @@ export default function SetupProfileScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: 24, paddingBottom: 48 },
-  title: {
-    fontSize: 24, fontWeight: '600',
-    color: colors.text, marginBottom: 8, marginTop: 16,
-  },
-  subtitle: {
-    fontSize: 16, color: colors.muted,
-    lineHeight: 24, marginBottom: 32,
-  },
+  title: { fontSize: 24, fontWeight: '600', color: colors.text, marginBottom: 8, marginTop: 16 },
+  subtitle: { fontSize: 16, color: colors.muted, lineHeight: 24, marginBottom: 32 },
   form: { gap: 20, marginBottom: 32 },
   field: { gap: 6 },
   label: { fontSize: 14, fontWeight: '500', color: colors.text },
   input: {
-    borderWidth: 1.5, borderColor: '#E5E7EB',
-    borderRadius: 8, paddingHorizontal: 14,
-    paddingVertical: 14, fontSize: 16,
+    borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 8,
+    paddingHorizontal: 14, paddingVertical: 14, fontSize: 16,
     color: colors.text, backgroundColor: colors.background,
   },
   inputError: { borderColor: colors.danger },
   fieldError: { fontSize: 13, color: colors.danger },
   ageNote: { fontSize: 13, color: colors.muted, marginTop: -8 },
-  btn: {
-    backgroundColor: colors.primary,
-    borderRadius: 8, paddingVertical: 16,
-    alignItems: 'center',
-  },
+  btn: { backgroundColor: colors.primary, borderRadius: 8, paddingVertical: 16, alignItems: 'center' },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
