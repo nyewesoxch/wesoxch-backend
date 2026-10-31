@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityInd
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import { shrink } from '../utils/images';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
@@ -40,14 +41,14 @@ export default function ProfileScreen({ navigation }) {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [1,1], quality: 0.7 });
-    if (!result.canceled && result.assets?.[0]) await uploadAvatar(result.assets[0]);
+    if (!result.canceled && result.assets?.[0]) await uploadAvatar(await shrink(result.assets[0], 512));
   };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed'); return; }
     const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1,1], quality: 0.7 });
-    if (!result.canceled && result.assets?.[0]) await uploadAvatar(result.assets[0]);
+    if (!result.canceled && result.assets?.[0]) await uploadAvatar(await shrink(result.assets[0], 512));
   };
 
   const uploadAvatar = async (asset) => {

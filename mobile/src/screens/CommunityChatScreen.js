@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import {
+  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
+  ActivityIndicator, KeyboardAvoidingView, Platform, Alert,
+} from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -11,63 +15,121 @@ export default function CommunityChatScreen({ route, navigation }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const flatRef = useRef(null);
-  const pollRef = useRef(null);
-
-  useEffect(() => {
-    fetchMessages();
-    pollRef.current = setInterval(fetchMessages, 5000);
-    return () => clearInterval(pollRef.current);
-  }, []);
+  const removed = useRef(new Set()); // messages this person reported, kept hidden even if a refresh returns them
 
   const fetchMessages = async () => {
     try {
       const res = await api.get(`/chat/${community.id}`);
-      setMessages(res.data.messages || []);
-    } catch {}
-    finally { setLoading(false); }
+      setMessages((res.data.messages || []).filter(m => !removed.current.has(m.id)));
+      setError('');
+    } catch {
+      setError('We could not load messages. Check your connection.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchMessages();
+    const timer = setInterval(fetchMessages, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSend = async () => {
-    if (!text.trim()) return;
+    const body = text.trim();
+    if (!body) return;
     setSending(true);
-    const msg = text.trim();
     setText('');
     try {
-      await api.post(`/chat/${community.id}`, { message: msg });
+      await api.post(`/chat/${community.id}`, { message: body });
       await fetchMessages();
       setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 100);
-    } catch { setText(msg); }
-    finally { setSending(false); }
+    } catch (e) {
+      setText(body);
+      Alert.alert('Message not sent', e.response?.data?.message || 'Check your connection and try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
-  const formatTime = (d) => new Date(d).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' });
+  const sendReport = async (item, reason) => {
+    removed.current.add(item.id);
+    setMessages(m => m.filter(x => x.id !== item.id));
+    try {
+      await api.post(`/moderation/messages/${item.id}/report`, { reason });
+      Alert.alert('Reported', 'The message is now hidden.');
+    } catch (e) {
+      removed.current.delete(item.id);
+      fetchMessages();
+      Alert.alert('Sorry, the report did not go through', e.response?.data?.message || 'Check your connection and try again.');
+    }
+  };
+
+  const chooseReason = (item) =>
+    Alert.alert('Why are you reporting this?', undefined, [
+      { text: 'Spam or scam', onPress: () => sendReport(item, 'spam') },
+      { text: 'Harassment or hate', onPress: () => sendReport(item, 'harassment') },
+      { text: 'Something else', onPress: () => sendReport(item, 'other') },
+    ], { cancelable: true });
+
+  const doBlock = async (item) => {
+    try {
+      await api.post(`/moderation/blocks/${item.user_id}`);
+      setMessages(m => m.filter(x => x.user_id !== item.user_id));
+    } catch (e) {
+      Alert.alert('Sorry, we could not block them', e.response?.data?.message || 'Check your connection and try again.');
+    }
+  };
+
+  const confirmBlock = (item) =>
+    Alert.alert(`Block @${item.username}?`, 'You will no longer see their messages in any community.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Block', style: 'destructive', onPress: () => doBlock(item) },
+    ]);
+
+  const openMenu = (item) =>
+    Alert.alert(item.full_name || item.username, 'What would you like to do?', [
+      { text: 'Report message', onPress: () => chooseReason(item) },
+      { text: `Block @${item.username}`, style: 'destructive', onPress: () => confirmBlock(item) },
+      { text: 'Cancel', style: 'cancel' },
+    ], { cancelable: true });
+
+  const time = (d) => new Date(d).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' });
 
   const renderMsg = ({ item, index }) => {
     const isMe = item.user_id === user?.id;
     const prev = messages[index - 1];
     const showName = !isMe && (!prev || prev.user_id !== item.user_id);
     return (
-      <View style={[styles.msgRow, isMe && styles.msgRowMe]}>
+      <View style={[styles.row, isMe && styles.rowMe]}>
         {!isMe && (
-          <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { userId: item.user_id })}>
-            {showName ? (
-              item.avatar_url
-                ? <Image source={{ uri: item.avatar_url }} style={styles.msgAvatar} />
-                : <View style={styles.msgAvatar}><Text style={styles.msgAvatarText}>{(item.username||'?').charAt(0).toUpperCase()}</Text></View>
-            ) : <View style={{ width: 32 }} />}
-          </TouchableOpacity>
+          showName ? (
+            <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { userId: item.user_id })} accessibilityLabel={`View ${item.username}`}>
+              {item.avatar_url
+                ? <Image source={{ uri: item.avatar_url }} style={styles.avatar} contentFit="cover" />
+                : <View style={[styles.avatar, styles.avatarLetter]}><Text style={styles.avatarText}>{(item.username || '?').charAt(0).toUpperCase()}</Text></View>}
+            </TouchableOpacity>
+          ) : <View style={styles.avatar} />
         )}
         <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
-          {!isMe && showName && (
-            <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { userId: item.user_id })}>
-              <Text style={styles.msgName}>{item.full_name || item.username}</Text>
-            </TouchableOpacity>
-          )}
-          <Text style={[styles.msgText, isMe && styles.msgTextMe]}>{item.message}</Text>
-          <Text style={styles.msgTime}>{formatTime(item.created_at)}</Text>
+          {showName && <Text style={styles.name} numberOfLines={1}>{item.full_name || item.username}</Text>}
+          <Text style={[styles.msg, isMe && styles.msgMe]}>{item.message}</Text>
+          <View style={styles.metaRow}>
+            <Text style={[styles.time, isMe && styles.timeMe]}>{time(item.created_at)}</Text>
+            {!isMe && (
+              <TouchableOpacity
+                onPress={() => openMenu(item)}
+                hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+                accessibilityLabel="Report this message or block the sender"
+              >
+                <Ionicons name="ellipsis-horizontal" size={16} color={colors.muted} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
     );
@@ -78,36 +140,45 @@ export default function CommunityChatScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
+        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.headerInfo} onPress={() => navigation.navigate('CommunityMembers', { community })}>
           {community.avatar_url
-            ? <Image source={{ uri: community.avatar_url }} style={styles.headerAvatar} />
-            : <View style={[styles.headerAvatar, styles.headerAvatarPlaceholder]}><Text style={{ color: '#fff', fontWeight: '700' }}>{community.name.charAt(0)}</Text></View>
-          }
-          <View>
-            <Text style={styles.headerName}>{community.name}</Text>
-            <Text style={styles.headerSub}>{community.member_count} members · tap to view</Text>
+            ? <Image source={{ uri: community.avatar_url }} style={styles.headerAvatar} contentFit="cover" />
+            : <View style={[styles.headerAvatar, styles.avatarLetter]}><Text style={styles.avatarText}>{community.name.charAt(0).toUpperCase()}</Text></View>}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerName} numberOfLines={1}>{community.name}</Text>
+            <Text style={styles.headerSub}>{community.member_count} members</Text>
           </View>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('CommunityMembers', { community })}>
-          <Ionicons name="people-outline" size={22} color={colors.textSecondary} />
+        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('CommunityMembers', { community })} accessibilityLabel="See members">
+          <Ionicons name="people-outline" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
+
+      {!!error && messages.length > 0 && (
+        <View style={styles.banner}><Text style={styles.bannerText}>{error}</Text></View>
+      )}
+
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <FlatList
           ref={flatRef}
           data={messages}
           keyExtractor={item => item.id}
           renderItem={renderMsg}
-          contentContainerStyle={styles.msgList}
+          contentContainerStyle={styles.list}
           onContentSizeChange={() => flatRef.current?.scrollToEnd({ animated: false })}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>💬</Text>
-              <Text style={styles.emptyText}>No messages yet</Text>
-              <Text style={styles.emptySubText}>Be the first to say something</Text>
+              <Ionicons name="chatbubbles-outline" size={32} color={colors.muted} />
+              <Text style={styles.emptyTitle}>{error ? 'Sorry, that did not work' : 'No messages yet'}</Text>
+              <Text style={styles.emptyText}>{error || 'Say hello and start the conversation.'}</Text>
+              {!!error && (
+                <TouchableOpacity style={styles.retryBtn} onPress={fetchMessages}>
+                  <Text style={styles.retryText}>Try again</Text>
+                </TouchableOpacity>
+              )}
             </View>
           }
         />
@@ -116,20 +187,18 @@ export default function CommunityChatScreen({ route, navigation }) {
             style={styles.input}
             value={text}
             onChangeText={setText}
-            placeholder="Type something..."
-            placeholderTextColor={colors.textMuted}
+            placeholder="Write a message"
+            placeholderTextColor={colors.muted}
             multiline
             maxLength={500}
           />
           <TouchableOpacity
-            style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnDisabled]}
+            style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnOff]}
             onPress={handleSend}
             disabled={!text.trim() || sending}
+            accessibilityLabel="Send message"
           >
-            {sending
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Ionicons name="send" size={18} color="#fff" />
-            }
+            {sending ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="send" size={20} color="#fff" />}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -138,33 +207,38 @@ export default function CommunityChatScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 10 },
-  backBtn: { padding: 4 },
-  headerInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  container: { flex: 1, backgroundColor: colors.background },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: colors.border },
+  iconBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
+  headerInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerAvatar: { width: 36, height: 36, borderRadius: 18 },
-  headerAvatarPlaceholder: { backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
-  headerName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
-  headerSub: { fontSize: 11, color: colors.textMuted },
-  msgList: { padding: 12, gap: 4, paddingBottom: 8 },
-  msgRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginBottom: 2 },
-  msgRowMe: { justifyContent: 'flex-end' },
-  msgAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
-  msgAvatarText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  bubble: { maxWidth: '76%', borderRadius: 18, padding: 10, paddingHorizontal: 14 },
+  headerName: { fontSize: 16, fontWeight: '600', color: colors.text },
+  headerSub: { fontSize: 12, color: colors.muted },
+  banner: { backgroundColor: colors.surface, paddingVertical: 8, paddingHorizontal: 16 },
+  bannerText: { fontSize: 12, color: colors.muted, textAlign: 'center' },
+  list: { padding: 12, gap: 4, flexGrow: 1 },
+  row: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  rowMe: { justifyContent: 'flex-end' },
+  avatar: { width: 32, height: 32, borderRadius: 16 },
+  avatarLetter: { backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  avatarText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  bubble: { maxWidth: '78%', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12 },
   bubbleMe: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
-  bubbleThem: { backgroundColor: colors.bgElevated, borderBottomLeftRadius: 4 },
-  msgName: { fontSize: 11, color: colors.primaryLight, fontWeight: '700', marginBottom: 3 },
-  msgText: { color: colors.text, fontSize: 14, lineHeight: 20 },
-  msgTextMe: { color: '#fff' },
-  msgTime: { fontSize: 10, color: colors.muted, marginTop: 3, textAlign: 'right' },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
-  emptyEmoji: { fontSize: 40 },
-  emptyText: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
-  emptySubText: { color: colors.textMuted, fontSize: 13 },
-  inputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: 10, gap: 8, borderTopWidth: 1, borderTopColor: colors.border },
-  input: { flex: 1, backgroundColor: colors.bgElevated, color: colors.textPrimary, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
+  bubbleThem: { backgroundColor: colors.surface, borderBottomLeftRadius: 4 },
+  name: { fontSize: 12, fontWeight: '600', color: colors.primary, marginBottom: 4 },
+  msg: { fontSize: 14, lineHeight: 20, color: colors.text },
+  msgMe: { color: '#fff' },
+  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 4 },
+  time: { fontSize: 12, color: colors.muted },
+  timeMe: { color: 'rgba(255,255,255,0.75)' },
+  empty: { alignItems: 'center', paddingTop: 64, paddingHorizontal: 32, gap: 8 },
+  emptyTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
+  emptyText: { fontSize: 14, color: colors.muted, textAlign: 'center' },
+  retryBtn: { marginTop: 8, backgroundColor: colors.primary, borderRadius: 8, minHeight: 44, paddingHorizontal: 24, justifyContent: 'center' },
+  retryText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, padding: 8, borderTopWidth: 1, borderTopColor: colors.border },
+  input: { flex: 1, backgroundColor: colors.surface, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colors.text, maxHeight: 100, minHeight: 44 },
   sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
-  sendBtnDisabled: { backgroundColor: colors.bgElevated },
+  sendBtnOff: { backgroundColor: colors.border },
 });

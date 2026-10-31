@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
+import { shrink } from '../utils/images';
 import * as SecureStore from 'expo-secure-store';
 import { colors } from '../theme/colors';
 import { BASE_SERVER_URL } from '../api/client';
@@ -51,14 +52,14 @@ export default function CreateListingScreen({ navigation }) {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [4,3], quality: 0.7 });
-    if (!result.canceled && result.assets?.[0]) setImages(p => [...p, result.assets[0]]);
+    if (!result.canceled && result.assets?.[0]) { const small = await shrink(result.assets[0]); setImages(p => [...p, small]); }
   };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed'); return; }
     const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4,3], quality: 0.7 });
-    if (!result.canceled && result.assets?.[0]) setImages(p => [...p, result.assets[0]]);
+    if (!result.canceled && result.assets?.[0]) { const small = await shrink(result.assets[0]); setImages(p => [...p, small]); }
   };
 
   const uploadImage = (asset, token) => new Promise((resolve, reject) => {

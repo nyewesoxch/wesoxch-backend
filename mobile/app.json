@@ -35,7 +35,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Wesoxch uses your location to show nearby events, communities and rentals."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "extra": {
       "eas": {

@@ -5,7 +5,7 @@ const authMiddleware = require('../middleware/auth');
 const { sendPushNotification } = require('../utils/pushNotification');
 router.get('/:communityId', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT cm.id, cm.message, cm.created_at, u.id AS user_id, u.username, u.full_name, u.avatar_url FROM community_messages cm JOIN users u ON cm.user_id = u.id WHERE cm.community_id = $1 ORDER BY cm.created_at ASC LIMIT 100', [req.params.communityId]);
+    const result = await pool.query('SELECT cm.id, cm.message, cm.created_at, u.id AS user_id, u.username, u.full_name, u.avatar_url FROM community_messages cm JOIN users u ON cm.user_id = u.id WHERE cm.community_id = $1 AND cm.is_hidden = FALSE AND cm.user_id NOT IN (SELECT blocked_id FROM user_blocks WHERE blocker_id = $2) ORDER BY cm.created_at ASC LIMIT 100', [req.params.communityId, req.user.id]);
     await pool.query('INSERT INTO community_last_read (user_id, community_id, last_read_at) VALUES ($1,$2,NOW()) ON CONFLICT (user_id, community_id) DO UPDATE SET last_read_at = NOW()', [req.user.id, req.params.communityId]);
     return res.status(200).json({ success: true, messages: result.rows });
   } catch (err) { return res.status(500).json({ success: false, message: 'Server error' }); }

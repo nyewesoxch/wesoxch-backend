@@ -35,6 +35,7 @@ app.use('/api/chat', require('./routes/chat'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/search', require('./routes/search'));
 app.use('/api/reports', require('./routes/reports'));
+app.use('/api/moderation', require('./routes/moderation'));
 app.use('/api/premium', require('./routes/premium'));
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Not found' }));
