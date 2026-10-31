@@ -1,4 +1,5 @@
 export const colors = {
+  // New design system
   background: '#FFFFFF',
   surface: '#F5F6F8',
   text: '#111417',
@@ -8,4 +9,25 @@ export const colors = {
   danger: '#D64545',
   success: '#2E9E6B',
   border: '#E5E7EB',
+
+  // Names still used by screens that have not been restyled yet
+  bg: '#FFFFFF',
+  bgCard: '#FFFFFF',
+  bgElevated: '#F5F6F8',
+  bgInput: '#F5F6F8',
+  primaryLight: '#2E9E6B',
+  primaryDark: '#0A5A49',
+  textPrimary: '#111417',
+  textSecondary: '#6B7280',
+  textMuted: '#6B7280',
+  green: '#2E9E6B',
+  amber: '#F2A93B',
+  rose: '#D64545',
+  blue: '#3B82F6',
+  purple: '#8B5CF6',
+  cocoa: '#7B4F2E',
+  therapy: '#8B5CF6',
+  rentals: '#F2A93B',
+  carrier: '#3B82F6',
+  market: '#2E9E6B',
 };

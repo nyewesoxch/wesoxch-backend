@@ -66,7 +66,7 @@ export default function CommunityChatScreen({ route, navigation }) {
               <Text style={styles.msgName}>{item.full_name || item.username}</Text>
             </TouchableOpacity>
           )}
-          <Text style={styles.msgText}>{item.message}</Text>
+          <Text style={[styles.msgText, isMe && styles.msgTextMe]}>{item.message}</Text>
           <Text style={styles.msgTime}>{formatTime(item.created_at)}</Text>
         </View>
       </View>
@@ -156,8 +156,9 @@ const styles = StyleSheet.create({
   bubbleMe: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
   bubbleThem: { backgroundColor: colors.bgElevated, borderBottomLeftRadius: 4 },
   msgName: { fontSize: 11, color: colors.primaryLight, fontWeight: '700', marginBottom: 3 },
-  msgText: { color: '#fff', fontSize: 14, lineHeight: 20 },
-  msgTime: { fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 3, textAlign: 'right' },
+  msgText: { color: colors.text, fontSize: 14, lineHeight: 20 },
+  msgTextMe: { color: '#fff' },
+  msgTime: { fontSize: 10, color: colors.muted, marginTop: 3, textAlign: 'right' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyEmoji: { fontSize: 40 },
   emptyText: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
