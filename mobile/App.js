@@ -25,6 +25,7 @@ import BecomeSellerScreen from './src/screens/BecomeSellerScreen';
 import MyListingsScreen from './src/screens/MyListingsScreen';
 import LegalScreen from './src/screens/LegalScreen';
 import CarrierScreen from './src/screens/CarrierScreen';
+import ListingDetailScreen from './src/screens/ListingDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -58,6 +59,7 @@ function RootNavigator() {
           <Stack.Screen name="MyListings" component={MyListingsScreen} />
           <Stack.Screen name="Legal" component={LegalScreen} />
           <Stack.Screen name="Carrier" component={CarrierScreen} />
+          <Stack.Screen name="ListingDetail" component={ListingDetailScreen} />
         </>
       ) : (
         <>

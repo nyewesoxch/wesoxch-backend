@@ -143,7 +143,11 @@ export default function PulseScreen({ navigation }) {
         renderItem={({ item }) => {
           if (item._type === 'event') return renderEvent(item);
           if (item._type === 'community') return renderCommunity(item);
-          if (item._type === 'listing') return renderListing(item);
+          if (item._type === 'listing') return (
+            <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('ListingDetail', { listing: item })}>
+              {renderListing(item)}
+            </TouchableOpacity>
+          );
           return null;
         }}
         contentContainerStyle={styles.list}
@@ -175,7 +179,7 @@ const styles = StyleSheet.create({
   createBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   list: { paddingHorizontal: 16, paddingBottom: 24, gap: 12 },
   card: { backgroundColor: colors.bgCard, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
-  cardCover: { width: '100%', height: 180 },
+  cardCover: { width: '100%', aspectRatio: 4 / 3 },
   cardCoverGradient: { width: '100%', height: 100, justifyContent: 'center', alignItems: 'center' },
   cardCoverEmoji: { fontSize: 40 },
   cardBody: { padding: 14, gap: 6 },
