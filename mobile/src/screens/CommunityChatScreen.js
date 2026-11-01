@@ -18,6 +18,9 @@ export default function CommunityChatScreen({ route, navigation }) {
   const [error, setError] = useState('');
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [isMember, setIsMember] = useState(true);
+  const [joining, setJoining] = useState(false);
+  const [memberCount, setMemberCount] = useState(community.member_count || 0);
   const flatRef = useRef(null);
   const removed = useRef(new Set()); // messages this person reported, kept hidden even if a refresh returns them
 
@@ -25,6 +28,7 @@ export default function CommunityChatScreen({ route, navigation }) {
     try {
       const res = await api.get(`/chat/${community.id}`);
       setMessages((res.data.messages || []).filter(m => !removed.current.has(m.id)));
+      setIsMember(res.data.is_member !== false);
       setError('');
     } catch {
       setError('We could not load messages. Check your connection.');
@@ -56,7 +60,24 @@ export default function CommunityChatScreen({ route, navigation }) {
     }
   };
 
+    const handleJoin = async () => {
+    setJoining(true);
+    try {
+      await api.post(`/communities/${community.id}/join`);
+      setMemberCount(n => n + 1);
+    } catch (e) {
+      if (e.response?.status !== 409) {
+        Alert.alert('Could not join', e.response?.data?.message || 'Check your connection and try again.');
+        setJoining(false);
+        return;
+      }
+    }
+    await fetchMessages();
+    setJoining(false);
+  };
+
   const sendReport = async (item, reason) => {
+    if (!isMember) { Alert.alert('Join to report', 'Join this community to report its messages.'); return; }
     removed.current.add(item.id);
     setMessages(m => m.filter(x => x.id !== item.id));
     try {
@@ -149,7 +170,7 @@ export default function CommunityChatScreen({ route, navigation }) {
             : <View style={[styles.headerAvatar, styles.avatarLetter]}><Text style={styles.avatarText}>{community.name.charAt(0).toUpperCase()}</Text></View>}
           <View style={{ flex: 1 }}>
             <Text style={styles.headerName} numberOfLines={1}>{community.name}</Text>
-            <Text style={styles.headerSub}>{community.member_count} members</Text>
+            <Text style={styles.headerSub}>{memberCount} members</Text>
           </View>
         </TouchableOpacity>
         <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('CommunityMembers', { community })} accessibilityLabel="See members">
@@ -182,7 +203,15 @@ export default function CommunityChatScreen({ route, navigation }) {
             </View>
           }
         />
-        <View style={styles.inputRow}>
+        {!isMember && (
+          <View style={styles.joinBar}>
+            <Text style={styles.joinText}>Join this community to read and write messages.</Text>
+            <TouchableOpacity style={styles.joinBtn} onPress={handleJoin} disabled={joining} accessibilityLabel="Join this community">
+              {joining ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.joinBtnText}>Join</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
+        <View style={[styles.inputRow, !isMember && styles.hidden]}>
           <TextInput
             style={styles.input}
             value={text}
@@ -241,4 +270,9 @@ const styles = StyleSheet.create({
   input: { flex: 1, backgroundColor: colors.surface, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colors.text, maxHeight: 100, minHeight: 44 },
   sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
   sendBtnOff: { backgroundColor: colors.border },
+  hidden: { display: 'none' },
+  joinBar: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
+  joinText: { flex: 1, fontSize: 14, color: colors.text },
+  joinBtn: { backgroundColor: colors.primary, borderRadius: 8, minHeight: 44, minWidth: 80, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' },
+  joinBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 });
