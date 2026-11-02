@@ -116,6 +116,17 @@ export default function ListingDetailScreen({ route, navigation }) {
             <Ionicons name="chevron-forward" size={18} color={colors.muted} />
           </TouchableOpacity>
 
+          {listing.seller_premium && !!listing.seller_username && (
+            <TouchableOpacity
+              style={styles.storeBtn}
+              onPress={() => navigation.navigate('Store', { username: listing.seller_username })}
+              accessibilityLabel={`Visit ${sellerName}'s store`}
+            >
+              <Ionicons name="storefront-outline" size={20} color={colors.primary} />
+              <Text style={styles.storeBtnText} numberOfLines={1}>More from {sellerName}</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+            </TouchableOpacity>
+          )}
           {!isOwner && (
             <TouchableOpacity style={styles.contactBtn} onPress={contact} accessibilityLabel="Contact the seller on WhatsApp">
               <Ionicons name="logo-whatsapp" size={20} color="#fff" />
@@ -152,6 +163,8 @@ const styles = StyleSheet.create({
   sellerAvatarText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   sellerName: { fontSize: 16, fontWeight: '500', color: colors.text },
   sellerSub: { fontSize: 12, color: colors.muted },
+  storeBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8, minHeight: 48, paddingHorizontal: 16, borderWidth: 1.5, borderColor: colors.primary },
+  storeBtnText: { flex: 1, fontSize: 16, fontWeight: '500', color: colors.primary },
   contactBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: 8, minHeight: 48 },
   contactText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });

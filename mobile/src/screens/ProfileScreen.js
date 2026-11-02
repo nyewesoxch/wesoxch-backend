@@ -97,6 +97,7 @@ export default function ProfileScreen({ navigation }) {
     { icon: 'home', color: colors.amber, label: 'Rentals', screen: 'Rentals' },
     { icon: 'heart', color: colors.therapy, label: 'Therapy', screen: 'Therapy' },
     { icon: 'cube', color: colors.carrier, label: 'Carrier', screen: 'Carrier' },
+    { icon: 'bag-handle-outline', color: colors.primary, label: 'My store', screen: 'Store' },
     user?.is_seller
       ? { icon: 'storefront', color: colors.market, label: 'Listings', screen: 'MyListings' }
       : { icon: 'storefront-outline', color: colors.cocoa, label: 'Sell', screen: 'BecomeSeller' },
@@ -227,7 +228,7 @@ const styles = StyleSheet.create({
   badge: { borderWidth: 1, borderColor: colors.green, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { color: colors.green, fontSize: 12, fontWeight: '600' },
   quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, padding: 16 },
-  quickBtn: { width: '30%', flex: 1, backgroundColor: colors.bgCard, borderRadius: 14, padding: 12, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: colors.border },
+  quickBtn: { width: '31%', backgroundColor: colors.bgCard, borderRadius: 14, padding: 12, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: colors.border },
   quickIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
   quickLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '600', textAlign: 'center' },
   section: { backgroundColor: colors.bgCard, borderRadius: 20, margin: 16, padding: 16, borderWidth: 1, borderColor: colors.border },

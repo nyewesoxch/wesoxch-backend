@@ -8,6 +8,9 @@ const authMiddleware = require('../middleware/auth');
 const FREE_PHOTO_LIMIT = 3;
 const MAX_PHOTOS_PER_LISTING = 4;
 
+// True when the seller has a store (an active premium membership)
+const PREMIUM_SQL = "EXISTS (SELECT 1 FROM premium_subscriptions ps WHERE ps.user_id = l.created_by AND ps.is_active = TRUE AND (ps.expires_at IS NULL OR ps.expires_at > NOW()))";
+
 const isUuid = (s) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s || '');
 const parseImages = (images) => {
   if (!images) return [];
@@ -66,7 +69,7 @@ router.get('/', async (req, res) => {
     if (category) { conditions.push(`l.category = $${i++}`); params.push(category); }
     params.push(lim, off);
     const result = await pool.query(
-      `SELECT l.*, u.username AS seller_username, u.full_name AS seller_name, u.phone AS seller_phone, u.seller_whatsapp
+      `SELECT l.*, u.username AS seller_username, u.full_name AS seller_name, u.phone AS seller_phone, u.seller_whatsapp, ${PREMIUM_SQL} AS seller_premium
        FROM listings l LEFT JOIN users u ON l.created_by = u.id
        WHERE ${conditions.join(' AND ')}
        ORDER BY l.created_at DESC LIMIT $${i} OFFSET $${i + 1}`,
@@ -128,7 +131,7 @@ router.get('/:id', async (req, res) => {
   try {
     if (!isUuid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid listing' });
     const result = await pool.query(
-      `SELECT l.*, u.username AS seller_username, u.full_name AS seller_name, u.phone AS seller_phone, u.seller_whatsapp
+      `SELECT l.*, u.username AS seller_username, u.full_name AS seller_name, u.phone AS seller_phone, u.seller_whatsapp, ${PREMIUM_SQL} AS seller_premium
        FROM listings l LEFT JOIN users u ON l.created_by = u.id WHERE l.id = $1`,
       [req.params.id]
     );
