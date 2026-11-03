@@ -20,6 +20,10 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.RECORD_AUDIO"
+      ],
+      "blockedPermissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -27,7 +31,8 @@
         "expo-image-picker",
         {
           "photosPermission": "Wesoxch needs access to your photos to upload images.",
-          "cameraPermission": "Wesoxch needs access to your camera to take photos."
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       [

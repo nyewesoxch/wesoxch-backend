@@ -1,28 +1,38 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
-require('dotenv').config();
+const rateLimit = require('express-rate-limit');
 
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.error('JWT_SECRET is missing or too short (use at least 32 characters). Stopping.');
+  process.exit(1);
+}
+
+const IS_PROD = process.env.NODE_ENV === 'production';
 const app = express();
+if (IS_PROD) app.set('trust proxy', 1); // behind a hosting proxy, so limits see the real address
+
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors());
-app.use(morgan('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(morgan(IS_PROD ? 'combined' : 'dev'));
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '7d', immutable: true }));
 
-app.get('/', (req, res) => res.json({
-  success: true,
-  message: 'Wesoxch API v3.0',
-  version: '3.0.0',
-}));
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: IS_PROD ? 100 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many attempts. Please wait a few minutes and try again.' },
+});
 
-// Auth — phone based
-app.use('/api/auth', require('./routes/phone_auth'));
+app.get('/', (req, res) => res.json({ success: true, message: 'Wesoxch API v3.0', version: '3.0.0' }));
 
-// Core features
+app.use('/api/auth', authLimiter, require('./routes/phone_auth'));
 app.use('/api/communities', require('./routes/communities'));
 app.use('/api/community-requests', require('./routes/community_requests'));
 app.use('/api/events', require('./routes/events'));
@@ -46,7 +56,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Wesoxch API v3.0 running on port ${PORT}`);
+  console.log(`Wesoxch API v3.0 running on port ${PORT}${IS_PROD ? ' (production)' : ''}`);
 });
 
 module.exports = app;

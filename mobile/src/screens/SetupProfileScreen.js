@@ -26,7 +26,7 @@ function Field({ label, error, ...props }) {
 }
 
 export default function SetupProfileScreen({ route }) {
-  const { phone } = route.params;
+  const { phone, signupToken } = route.params;
   const { setUser } = useAuth();
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
@@ -56,6 +56,7 @@ export default function SetupProfileScreen({ route }) {
     setLoading(true);
     try {
       const res = await api.post('/auth/complete-profile', {
+        signup_token: signupToken,
         phone,
         full_name: fullName.trim(),
         username: username.trim().toLowerCase(),

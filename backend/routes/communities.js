@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const authMiddleware = require('../middleware/auth');
+const requireAdmin = require('../middleware/admin');
 router.get('/', async (req, res) => {
   try {
     const { search, page = 1, limit = 50 } = req.query;
@@ -15,7 +16,7 @@ router.get('/', async (req, res) => {
     return res.status(200).json({ success: true, communities: result.rows });
   } catch (err) { return res.status(500).json({ success: false, message: 'Server error' }); }
 });
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { name, description, type, latitude, longitude, location_name, avatar_url } = req.body;
     if (!name) return res.status(400).json({ success: false, message: 'Name required' });

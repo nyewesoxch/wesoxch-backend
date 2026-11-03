@@ -1,230 +1,199 @@
+require('dotenv').config();
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 const generateToken = require('../utils/generateToken');
 const authMiddleware = require('../middleware/auth');
 const { sendOTP } = require('../utils/sms');
 
-const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+const IS_PROD = process.env.NODE_ENV === 'production';
+const MAX_SENDS_PER_HOUR = IS_PROD ? 5 : 50;   // codes one number can ask for
+const MAX_WRONG_TRIES = 5;                       // wrong guesses before a code stops working
+// The "phone verified" pass uses its own secret, so it cannot be used as a sign-in token
+const SIGNUP_SECRET = `${process.env.JWT_SECRET}:signup`;
 
-const formatPhone = (phone) => {
-  phone = phone.replace(/\s+/g, '').replace(/-/g, '');
-  if (phone.startsWith('0')) return '+254' + phone.slice(1);
-  if (phone.startsWith('254')) return '+' + phone;
-  if (!phone.startsWith('+')) return '+254' + phone;
-  return phone;
+const generateOTP = () => String(crypto.randomInt(100000, 1000000));
+
+const formatPhone = (raw) => {
+  const p = String(raw || '').replace(/[\s-]/g, '');
+  if (p.startsWith('+')) return p;
+  if (p.startsWith('0')) return '+254' + p.slice(1);
+  if (p.startsWith('254')) return '+' + p;
+  return '+254' + p;
+};
+const isKenyan = (p) => /^\+254[17]\d{8}$/.test(p);
+
+// Makes a fresh code, texts it, and returns it (or an error name)
+const issueOtp = async (phone) => {
+  await pool.query("DELETE FROM phone_otps WHERE created_at < NOW() - INTERVAL '1 day'");
+  const recent = await pool.query(
+    "SELECT COUNT(*)::int AS n FROM phone_otps WHERE phone = $1 AND created_at > NOW() - INTERVAL '1 hour'",
+    [phone]
+  );
+  if (recent.rows[0].n >= MAX_SENDS_PER_HOUR) return { error: 'tooMany' };
+
+  const otp = generateOTP();
+  await pool.query('UPDATE phone_otps SET used = TRUE WHERE phone = $1 AND used = FALSE', [phone]);
+  const row = await pool.query(
+    'INSERT INTO phone_otps (phone, otp, expires_at) VALUES ($1, $2, $3) RETURNING id',
+    [phone, otp, new Date(Date.now() + 10 * 60 * 1000)]
+  );
+
+  const sms = await sendOTP(phone, otp);
+  if (!sms.success && IS_PROD) {
+    await pool.query('UPDATE phone_otps SET used = TRUE WHERE id = $1', [row.rows[0].id]);
+    return { error: 'smsFailed' };
+  }
+  return { otp };
 };
 
-// Step 1 — Send OTP to phone
-router.post('/send-otp', async (req, res) => {
+const sendHandler = async (req, res) => {
   try {
-    const { phone } = req.body;
-    if (!phone) return res.status(400).json({ success: false, message: 'Phone number required' });
-    
-    const formatted = formatPhone(phone);
-    
-    // Validate Kenyan number
-    if (!formatted.match(/^\+254[17]\d{8}$/)) {
+    const phone = formatPhone(req.body.phone);
+    if (!isKenyan(phone)) {
       return res.status(400).json({ success: false, message: 'Enter a valid Kenyan phone number' });
     }
-
-    const otp = generateOTP();
-    const expires = new Date(Date.now() + 10 * 60 * 1000);
-
-    // Invalidate old OTPs
-    await pool.query('UPDATE phone_otps SET used = TRUE WHERE phone = $1', [formatted]);
-
-    // Save new OTP
-    await pool.query(
-      'INSERT INTO phone_otps (phone, otp, expires_at) VALUES ($1, $2, $3)',
-      [formatted, otp, expires]
-    );
-
-    // Send SMS
-    const result = await sendOTP(formatted, otp);
-
-    // In development return OTP hint
-    const response = {
-      success: true,
-      message: 'Verification code sent',
-      phone: formatted,
-    };
-
-    if (process.env.NODE_ENV !== 'production' || !result.success) {
-      response.otp_hint = otp;
+    const r = await issueOtp(phone);
+    if (r.error === 'tooMany') {
+      return res.status(429).json({ success: false, message: 'Too many codes asked for this number. Please wait an hour and try again.' });
     }
-
-    return res.status(200).json(response);
+    if (r.error === 'smsFailed') {
+      return res.status(502).json({ success: false, message: 'We could not send the code. Please try again in a moment.' });
+    }
+    const out = { success: true, message: 'Verification code sent', phone };
+    if (!IS_PROD) out.otp_hint = r.otp; // development only, never in production
+    return res.status(200).json(out);
   } catch (err) {
-    console.error('Send OTP error:', err);
-    return res.status(500).json({ success: false, message: 'Could not send code' });
+    console.error('Send OTP error:', err.message);
+    return res.status(500).json({ success: false, message: 'Could not send the code' });
   }
-});
+};
+router.post('/send-otp', sendHandler);
+router.post('/resend-otp', sendHandler);
 
-// Step 2 — Verify OTP
+// Check the code. Existing people are signed in; new people get a short-lived pass to finish their profile.
 router.post('/verify-otp', async (req, res) => {
   try {
-    const { phone, otp } = req.body;
-    if (!phone || !otp) return res.status(400).json({ success: false, message: 'Phone and code required' });
-
-    const formatted = formatPhone(phone);
-
-    const result = await pool.query(
-      'SELECT * FROM phone_otps WHERE phone = $1 AND otp = $2 AND used = FALSE AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1',
-      [formatted, otp]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired code' });
+    const phone = formatPhone(req.body.phone);
+    const code = String(req.body.otp || '').trim();
+    if (!isKenyan(phone) || !code) {
+      return res.status(400).json({ success: false, message: 'Phone number and code are needed' });
     }
 
-    await pool.query('UPDATE phone_otps SET used = TRUE WHERE id = $1', [result.rows[0].id]);
-
-    // Check if user exists
-    const userResult = await pool.query(
-      'SELECT * FROM users WHERE phone_number = $1',
-      [formatted]
+    const found = await pool.query(
+      'SELECT id, otp, attempts FROM phone_otps WHERE phone = $1 AND used = FALSE AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1',
+      [phone]
     );
+    if (found.rows.length === 0) {
+      return res.status(400).json({ success: false, message: 'That code has expired. Request a new one.' });
+    }
+    const rec = found.rows[0];
 
-    if (userResult.rows.length > 0) {
-      // Existing user — log them in
-      const user = userResult.rows[0];
-      const token = generateToken(user);
+    if (rec.otp !== code) {
+      const upd = await pool.query('UPDATE phone_otps SET attempts = COALESCE(attempts, 0) + 1 WHERE id = $1 RETURNING attempts', [rec.id]);
+      const left = MAX_WRONG_TRIES - upd.rows[0].attempts;
+      if (left <= 0) {
+        await pool.query('UPDATE phone_otps SET used = TRUE WHERE id = $1', [rec.id]);
+        return res.status(429).json({ success: false, message: 'Too many wrong codes. Request a new one.' });
+      }
+      return res.status(400).json({ success: false, message: `That code is not right. ${left} ${left === 1 ? 'try' : 'tries'} left.` });
+    }
+
+    await pool.query('UPDATE phone_otps SET used = TRUE WHERE id = $1', [rec.id]);
+
+    const existing = await pool.query('SELECT * FROM users WHERE phone_number = $1', [phone]);
+    if (existing.rows.length > 0) {
+      const user = existing.rows[0];
+      if (user.is_active === false) {
+        return res.status(403).json({ success: false, message: 'This account is not active.' });
+      }
       return res.status(200).json({
         success: true,
         is_new_user: false,
-        token,
+        token: generateToken(user),
         user: {
-          id: user.id,
-          username: user.username,
-          full_name: user.full_name,
-          phone_number: user.phone_number,
-          avatar_url: user.avatar_url,
-          is_seller: user.is_seller,
-          is_verified: user.is_verified,
-          bio: user.bio,
-          location_name: user.location_name,
-          seller_whatsapp: user.seller_whatsapp,
-          seller_bio: user.seller_bio,
+          id: user.id, username: user.username, full_name: user.full_name, phone_number: user.phone_number,
+          avatar_url: user.avatar_url, is_seller: user.is_seller, is_verified: user.is_verified, bio: user.bio,
+          location_name: user.location_name, seller_whatsapp: user.seller_whatsapp, seller_bio: user.seller_bio,
           created_at: user.created_at,
-        }
+        },
       });
     }
 
-    // New user — needs profile setup
-    return res.status(200).json({
-      success: true,
-      is_new_user: true,
-      phone: formatted,
-      message: 'Phone verified. Complete your profile.',
-    });
+    const signup_token = jwt.sign({ phone, purpose: 'signup' }, SIGNUP_SECRET, { expiresIn: '15m' });
+    return res.status(200).json({ success: true, is_new_user: true, phone, signup_token });
   } catch (err) {
-    console.error('Verify OTP error:', err);
+    console.error('Verify OTP error:', err.message);
     return res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
-// Step 3 — Complete profile (new users only)
+// New people finish their profile. Needs the pass from verify-otp.
 router.post('/complete-profile', async (req, res) => {
   try {
-    const { phone, full_name, username, age } = req.body;
-    if (!phone || !full_name || !username) {
-      return res.status(400).json({ success: false, message: 'Name and username required' });
-    }
-    if (age && parseInt(age) < 13) {
-      return res.status(400).json({ success: false, message: 'Must be at least 13 years old' });
-    }
-
-    const formatted = formatPhone(phone);
-
-    // Check username taken
-    const existing = await pool.query(
-      'SELECT id FROM users WHERE username = $1',
-      [username.toLowerCase().trim()]
-    );
-    if (existing.rows.length > 0) {
-      return res.status(409).json({ success: false, message: 'Username already taken' });
+    let phone;
+    try {
+      const decoded = jwt.verify(String(req.body.signup_token || ''), SIGNUP_SECRET);
+      if (decoded.purpose !== 'signup' || !decoded.phone) throw new Error('wrong pass');
+      phone = decoded.phone;
+    } catch {
+      return res.status(401).json({ success: false, message: 'Your phone check has expired. Go back and request a new code.' });
     }
 
-    // Create user
-    const newUser = await pool.query(
-      `INSERT INTO users 
-        (phone_number, phone_verified, full_name, username, age, email, password_hash, is_email_verified, is_verified)
-       VALUES ($1, TRUE, $2, $3, $4, $5, $6, TRUE, TRUE)
-       RETURNING id, username, full_name, phone_number, avatar_url, is_seller, is_verified, created_at`,
-      [
-        formatted,
-        full_name.trim(),
-        username.toLowerCase().trim(),
-        age ? parseInt(age) : null,
-        `phone_${formatted.replace('+', '')}@wesoxch.app`,
-        await bcrypt.hash(Math.random().toString(36), 10),
-      ]
-    );
+    const name = String(req.body.full_name || '').trim();
+    const uname = String(req.body.username || '').trim().toLowerCase();
+    const age = parseInt(req.body.age, 10);
+    if (!name || name.length > 100) return res.status(400).json({ success: false, message: 'Enter your name' });
+    if (!/^[a-z0-9_]{3,30}$/.test(uname)) {
+      return res.status(400).json({ success: false, message: 'Username must be 3 to 30 letters, numbers or underscores' });
+    }
+    if (!Number.isInteger(age) || age < 13 || age > 120) {
+      return res.status(400).json({ success: false, message: 'You must be at least 13 to use Wesoxch' });
+    }
 
-    const user = newUser.rows[0];
-    const token = generateToken(user);
+    let created;
+    try {
+      created = await pool.query(
+        `INSERT INTO users (phone_number, phone_verified, full_name, username, age, email, password_hash, is_email_verified, is_verified)
+         VALUES ($1, TRUE, $2, $3, $4, $5, $6, TRUE, TRUE)
+         RETURNING id, username, full_name, phone_number, avatar_url, is_seller, is_verified, created_at`,
+        [phone, name, uname, age, `phone_${phone.replace('+', '')}@wesoxch.app`, await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10)]
+      );
+    } catch (e) {
+      if (e.code === '23505') {
+        const which = String(e.constraint || e.detail || '');
+        if (which.includes('username')) return res.status(409).json({ success: false, message: 'That username is already taken' });
+        return res.status(409).json({ success: false, message: 'This number already has an account. Go back and sign in.' });
+      }
+      throw e;
+    }
 
-    return res.status(201).json({
-      success: true,
-      token,
-      user,
-    });
+    const user = created.rows[0];
+    return res.status(201).json({ success: true, token: generateToken(user), user });
   } catch (err) {
-    console.error('Complete profile error:', err);
+    console.error('Complete profile error:', err.message);
     return res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
-// Resend OTP
-router.post('/resend-otp', async (req, res) => {
-  try {
-    const { phone } = req.body;
-    const formatted = formatPhone(phone);
-
-    const otp = generateOTP();
-    const expires = new Date(Date.now() + 10 * 60 * 1000);
-
-    await pool.query('UPDATE phone_otps SET used = TRUE WHERE phone = $1', [formatted]);
-    await pool.query(
-      'INSERT INTO phone_otps (phone, otp, expires_at) VALUES ($1, $2, $3)',
-      [formatted, otp, expires]
-    );
-
-    const result = await sendOTP(formatted, otp);
-
-    const response = { success: true, message: 'New code sent' };
-    if (!result.success) response.otp_hint = otp;
-
-    return res.status(200).json(response);
-  } catch (err) {
-    return res.status(500).json({ success: false, message: 'Could not resend' });
-  }
-});
-
-// Get current user
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, username, full_name, phone_number, bio, avatar_url, 
-              age, location_name, is_verified, is_seller, seller_bio, 
-              seller_whatsapp, created_at
+      `SELECT id, username, full_name, phone_number, bio, avatar_url, age, location_name,
+              is_verified, is_seller, seller_bio, seller_whatsapp, created_at
        FROM users WHERE id = $1`,
       [req.user.id]
     );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
+    if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
     return res.status(200).json({ success: true, user: result.rows[0] });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
-// Logout
-router.post('/logout', authMiddleware, (req, res) => {
-  return res.status(200).json({ success: true });
-});
+router.post('/logout', authMiddleware, (req, res) => res.status(200).json({ success: true }));
 
 module.exports = router;

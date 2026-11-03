@@ -56,7 +56,7 @@ export default function VerifyPhoneScreen({ route, navigation }) {
       const res = await api.post('/auth/verify-otp', { phone, otp: code });
 
       if (res.data.is_new_user) {
-        navigation.navigate('SetupProfile', { phone });
+        navigation.navigate('SetupProfile', { phone, signupToken: res.data.signup_token });
         return;
       }
 

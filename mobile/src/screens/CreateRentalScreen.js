@@ -129,7 +129,7 @@ export default function CreateRentalScreen({ navigation }) {
             </View>
           ))}
           {images.length < 6 && (
-            <TouchableOpacity style={styles.addImgBtn} onPress={showOptions}>
+            <TouchableOpacity style={styles.addImgBtn} onPress={pickImage}>
               <Ionicons name="camera-outline" size={26} color={colors.textMuted} />
               <Text style={styles.addImgText}>Add</Text>
             </TouchableOpacity>

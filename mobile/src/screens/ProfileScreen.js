@@ -7,7 +7,7 @@ import { shrink } from '../utils/images';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
-import { BASE_SERVER_URL } from '../api/client';
+import { BASE_SERVER_URL, fileUrl } from '../api/client';
 import api from '../api/client';
 import * as SecureStore from 'expo-secure-store';
 
@@ -68,7 +68,7 @@ export default function ProfileScreen({ navigation }) {
         xhr.onerror = () => reject(new Error('Network error'));
         xhr.send(formData);
       });
-      if (result.success) { setUser(result.user); Alert.alert('Done!', 'Profile picture updated.'); }
+      if (result.success) { setUser({ ...result.user, avatar_url: fileUrl(result.user.avatar_url) }); Alert.alert('Done!', 'Profile picture updated.'); }
       else Alert.alert('Error', 'Upload failed.');
     } catch (err) { Alert.alert('Error', err.message || 'Could not upload.'); }
     finally { setUploadingAvatar(false); }
@@ -110,7 +110,7 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.header}>
             <Text style={styles.headerTitle}>👤 Profile</Text>
           </View>
-          <TouchableOpacity style={styles.avatarWrap} onPress={showAvatarOptions}>
+          <TouchableOpacity style={styles.avatarWrap} onPress={pickImage}>
             {uploadingAvatar
               ? <View style={styles.avatar}><ActivityIndicator color="#fff" size="large" /></View>
               : user?.avatar_url
