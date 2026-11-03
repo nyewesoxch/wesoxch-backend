@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
+import Avatar from '../components/Avatar';
 import api from '../api/client';
 
 const parseImages = (images) => {
@@ -101,7 +102,10 @@ export default function PulseScreen({ navigation }) {
         {item.description && <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>}
         <View style={styles.cardFooterRow}>
           <Text style={styles.priceText}>{item.price_type === 'free' ? 'FREE' : `KES ${item.price}`}</Text>
-          <Text style={styles.metaSmall}>@{item.seller_username}</Text>
+          <View style={styles.byRow}>
+            <Avatar uri={item.seller_avatar} name={item.seller_name || item.seller_username} size={20} />
+            <Text style={styles.metaSmall}>@{item.seller_username}</Text>
+          </View>
         </View>
       </View>
     </View>
@@ -193,6 +197,7 @@ const styles = StyleSheet.create({
   pillText: { fontSize: 11, fontWeight: '700' },
   priceText: { color: colors.green, fontSize: 15, fontWeight: '800' },
   metaSmall: { fontSize: 11, color: colors.textMuted },
+  byRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 32 },
   emptyEmoji: { fontSize: 48, marginBottom: 16 },
   emptyTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 8 },

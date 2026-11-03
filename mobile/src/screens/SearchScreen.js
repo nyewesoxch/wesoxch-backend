@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Activity
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import Avatar from '../components/Avatar';
 import api from '../api/client';
 
 const parseImgs = (imgs) => {
@@ -129,7 +130,10 @@ export default function SearchScreen({ navigation }) {
                         {imgs[0] && <Image source={{ uri: imgs[0] }} style={styles.cardImg} />}
                         <View style={styles.cardInfo}>
                           <Text style={styles.cardTitle}>{item.title}</Text>
-                          <Text style={styles.cardMeta}>@{item.seller_username}</Text>
+                          <View style={styles.byRow}>
+                            <Avatar uri={item.seller_avatar} name={item.seller_username} size={20} />
+                            <Text style={styles.cardMeta}>@{item.seller_username}</Text>
+                          </View>
                           <Text style={[styles.cardPrice, { color: colors.green }]}>{item.price_type === 'free' ? 'FREE' : `KES ${item.price}`}</Text>
                         </View>
                       </View>
@@ -151,10 +155,7 @@ export default function SearchScreen({ navigation }) {
                 <Section title="👤 People" data={results.users} color={colors.blue}
                   renderItem={item => (
                     <TouchableOpacity key={item.id} style={styles.rowCard} onPress={() => navigation.navigate('UserProfile', { userId: item.id })}>
-                      {item.avatar_url
-                        ? <Image source={{ uri: item.avatar_url }} style={styles.rowAvatarImg} />
-                        : <View style={styles.rowAvatar}><Text style={{ fontSize: 20 }}>👤</Text></View>
-                      }
+                      <Avatar uri={item.avatar_url} name={item.full_name || item.username} size={44} />
                       <View style={styles.rowInfo}>
                         <Text style={styles.cardTitle}>{item.full_name || item.username}</Text>
                         <Text style={styles.cardMeta}>@{item.username}{item.is_seller ? ' · Seller' : ''}</Text>
@@ -190,6 +191,7 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1, padding: 10, justifyContent: 'center', gap: 4 },
   cardTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   cardMeta: { color: colors.textSecondary, fontSize: 12 },
+  byRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   cardPrice: { fontSize: 13, fontWeight: '700' },
   rowCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderRadius: 14, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.border, gap: 12 },
   rowAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.bgElevated, justifyContent: 'center', alignItems: 'center' },

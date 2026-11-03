@@ -69,7 +69,7 @@ router.get('/', async (req, res) => {
     if (category) { conditions.push(`l.category = $${i++}`); params.push(category); }
     params.push(lim, off);
     const result = await pool.query(
-      `SELECT l.*, u.username AS seller_username, u.full_name AS seller_name, u.phone AS seller_phone, u.seller_whatsapp, ${PREMIUM_SQL} AS seller_premium
+      `SELECT l.*, u.username AS seller_username, u.full_name AS seller_name, u.phone AS seller_phone, u.seller_whatsapp, u.avatar_url AS seller_avatar, ${PREMIUM_SQL} AS seller_premium
        FROM listings l LEFT JOIN users u ON l.created_by = u.id
        WHERE ${conditions.join(' AND ')}
        ORDER BY l.created_at DESC LIMIT $${i} OFFSET $${i + 1}`,
@@ -131,7 +131,7 @@ router.get('/:id', async (req, res) => {
   try {
     if (!isUuid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid listing' });
     const result = await pool.query(
-      `SELECT l.*, u.username AS seller_username, u.full_name AS seller_name, u.phone AS seller_phone, u.seller_whatsapp, ${PREMIUM_SQL} AS seller_premium
+      `SELECT l.*, u.username AS seller_username, u.full_name AS seller_name, u.phone AS seller_phone, u.seller_whatsapp, u.avatar_url AS seller_avatar, ${PREMIUM_SQL} AS seller_premium
        FROM listings l LEFT JOIN users u ON l.created_by = u.id WHERE l.id = $1`,
       [req.params.id]
     );

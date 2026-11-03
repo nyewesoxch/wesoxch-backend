@@ -60,6 +60,7 @@ export default function StoreScreen({ route, navigation }) {
         seller_name: seller.full_name || seller.username,
         seller_whatsapp: seller.seller_whatsapp,
         seller_premium: true,
+        seller_avatar: seller.avatar_url,
       },
     });
 

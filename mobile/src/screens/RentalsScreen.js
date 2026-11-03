@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import Avatar from '../components/Avatar';
 import api from '../api/client';
 
 const TYPES = ['all', 'bedsitter', 'single_room', 'one_bedroom', 'two_bedroom', 'three_bedroom', 'studio'];
@@ -135,7 +136,10 @@ export default function RentalsScreen({ navigation }) {
             )}
           </View>
           <View style={styles.footer}>
-            <Text style={styles.landlord} numberOfLines={1}>@{item.landlord_username || 'landlord'}</Text>
+            <View style={styles.landlordRow}>
+              <Avatar uri={item.landlord_avatar} name={item.landlord_username} size={28} />
+              <Text style={styles.landlord} numberOfLines={1}>@{item.landlord_username || 'landlord'}</Text>
+            </View>
             <TouchableOpacity style={styles.contactBtn} onPress={() => contact(item)} accessibilityLabel="Contact landlord on WhatsApp">
               <Ionicons name="logo-whatsapp" size={16} color="#fff" />
               <Text style={styles.contactText}>Contact</Text>
@@ -276,6 +280,7 @@ const styles = StyleSheet.create({
   fact: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   factText: { fontSize: 14, color: colors.muted, maxWidth: 160 },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  landlordRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   landlord: { flex: 1, fontSize: 14, color: colors.muted },
   contactBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: 999, minHeight: 44, paddingHorizontal: 16 },
   contactText: { color: '#fff', fontSize: 14, fontWeight: '600' },

@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
+import Avatar from '../components/Avatar';
 import api from '../api/client';
 
 const toList = (v) => {
@@ -106,9 +107,7 @@ export default function ListingDetailScreen({ route, navigation }) {
             onPress={() => listing.created_by && navigation.navigate('UserProfile', { userId: listing.created_by })}
             accessibilityLabel={`View ${sellerName}'s profile`}
           >
-            <View style={styles.sellerAvatar}>
-              <Text style={styles.sellerAvatarText}>{sellerName.charAt(0).toUpperCase()}</Text>
-            </View>
+            <Avatar uri={listing.seller_avatar} name={sellerName} size={40} />
             <View style={{ flex: 1 }}>
               <Text style={styles.sellerName} numberOfLines={1}>{sellerName}</Text>
               <Text style={styles.sellerSub}>See their profile</Text>

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import Avatar from '../components/Avatar';
 import api from '../api/client';
 
 export default function CommunityMembersScreen({ route, navigation }) {
@@ -37,10 +38,7 @@ export default function CommunityMembersScreen({ route, navigation }) {
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('UserProfile', { userId: item.id })}>
-            {item.avatar_url
-              ? <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
-              : <View style={styles.avatarPlaceholder}><Text style={styles.avatarText}>{(item.full_name || item.username).charAt(0).toUpperCase()}</Text></View>
-            }
+            <Avatar uri={item.avatar_url} name={item.full_name || item.username} size={46} />
             <View style={styles.info}>
               <Text style={styles.name}>{item.full_name || item.username}</Text>
               <Text style={styles.username}>@{item.username}</Text>

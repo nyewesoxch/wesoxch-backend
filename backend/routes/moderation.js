@@ -85,7 +85,7 @@ router.delete('/blocks/:userId', authMiddleware, async (req, res) => {
 router.get('/blocks', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT u.id, u.username, u.full_name FROM user_blocks b
+      `SELECT u.id, u.username, u.full_name, u.avatar_url FROM user_blocks b
        JOIN users u ON u.id = b.blocked_id WHERE b.blocker_id = $1 ORDER BY b.created_at DESC`,
       [req.user.id]
     );

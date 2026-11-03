@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
+import Avatar from '../components/Avatar';
 import api from '../api/client';
 
 export default function CommunityChatScreen({ route, navigation }) {
@@ -130,9 +131,7 @@ export default function CommunityChatScreen({ route, navigation }) {
         {!isMe && (
           showName ? (
             <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { userId: item.user_id })} accessibilityLabel={`View ${item.username}`}>
-              {item.avatar_url
-                ? <Image source={{ uri: item.avatar_url }} style={styles.avatar} contentFit="cover" />
-                : <View style={[styles.avatar, styles.avatarLetter]}><Text style={styles.avatarText}>{(item.username || '?').charAt(0).toUpperCase()}</Text></View>}
+              <Avatar uri={item.avatar_url} name={item.full_name || item.username} size={32} />
             </TouchableOpacity>
           ) : <View style={styles.avatar} />
         )}
