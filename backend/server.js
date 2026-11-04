@@ -20,6 +20,19 @@ app.use(cors());
 app.use(morgan(IS_PROD ? 'combined' : 'dev'));
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+
+// Positions are blurred to about 1 km before they are saved, so nobody's exact doorstep is stored
+app.use((req, res, next) => {
+  if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body && typeof req.body === 'object') {
+    for (const key of ['latitude', 'longitude']) {
+      const raw = req.body[key];
+      if (raw === undefined || raw === null || raw === '') continue;
+      const n = Number(raw);
+      req.body[key] = Number.isFinite(n) ? Math.round(n * 100) / 100 : null;
+    }
+  }
+  next();
+});
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '7d', immutable: true }));
 
 const authLimiter = rateLimit({

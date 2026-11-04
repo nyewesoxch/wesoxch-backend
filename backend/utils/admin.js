@@ -1,7 +1,8 @@
 const pool = require('../config/db');
 const { approveRequest, rejectRequest } = require('./communityApproval');
+const { deleteAccount } = require('./deleteAccount');
 
-const [, , cmd, arg] = process.argv;
+const [, , cmd, arg, flag] = process.argv;
 
 (async () => {
   try {
@@ -23,6 +24,18 @@ const [, , cmd, arg] = process.argv;
     } else if (cmd === 'reject') {
       const x = await rejectRequest(arg);
       console.log(x ? `Rejected "${x.name}".` : 'No pending request with that id.');
+    } else if (cmd === 'delete-user') {
+      const u = await pool.query('SELECT id, username, phone_number FROM users WHERE username = $1', [String(arg || '').toLowerCase()]);
+      if (u.rows.length === 0) {
+        console.log('No one has that username.');
+      } else if (flag !== '--yes') {
+        console.log(`This permanently deletes @${u.rows[0].username} (${u.rows[0].phone_number}) and everything they added.`);
+        console.log(`To go ahead, run: node utils/admin.js delete-user ${u.rows[0].username} --yes`);
+      } else {
+        const r = await deleteAccount(u.rows[0].id);
+        console.log(r.found ? `Deleted @${u.rows[0].username}. ${r.photos} photo file(s) removed.` : 'That account no longer exists.');
+        console.log('user id was:', u.rows[0].id);
+      }
     } else {
       console.log('Usage:');
       console.log('  node utils/admin.js make-admin <username>');
@@ -30,6 +43,7 @@ const [, , cmd, arg] = process.argv;
       console.log('  node utils/admin.js pending');
       console.log('  node utils/admin.js approve <request-id>');
       console.log('  node utils/admin.js reject <request-id>');
+      console.log('  node utils/admin.js delete-user <username> [--yes]');
     }
   } catch (e) {
     console.error('Error:', e.message);
