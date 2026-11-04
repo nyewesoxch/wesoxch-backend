@@ -195,6 +195,12 @@ export default function ProfileScreen({ navigation }) {
           )}
         </View>
 
+        <TouchableOpacity style={styles.legalBtn} onPress={() => navigation.navigate('Settings')} accessibilityLabel="Settings">
+          <Ionicons name="settings-outline" size={18} color={colors.textSecondary} />
+          <Text style={styles.legalBtnText}>Settings</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.legalBtn} onPress={() => navigation.navigate('Legal')}>
           <Ionicons name="document-text-outline" size={18} color={colors.textSecondary} />
           <Text style={styles.legalBtnText}>Terms & Privacy Policy</Text>

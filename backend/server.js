@@ -47,6 +47,7 @@ app.use('/api/search', require('./routes/search'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/moderation', require('./routes/moderation'));
 app.use('/api/premium', require('./routes/premium'));
+app.use('/api/account', require('./routes/account'));
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Not found' }));
 app.use((err, req, res, next) => {

@@ -27,6 +27,9 @@ import LegalScreen from './src/screens/LegalScreen';
 import CarrierScreen from './src/screens/CarrierScreen';
 import ListingDetailScreen from './src/screens/ListingDetailScreen';
 import StoreScreen from './src/screens/StoreScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+import BlockedPeopleScreen from './src/screens/BlockedPeopleScreen';
+import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -62,6 +65,9 @@ function RootNavigator() {
           <Stack.Screen name="Carrier" component={CarrierScreen} />
           <Stack.Screen name="ListingDetail" component={ListingDetailScreen} />
           <Stack.Screen name="Store" component={StoreScreen} />
+          <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="BlockedPeople" component={BlockedPeopleScreen} />
+          <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
         </>
       ) : (
         <>

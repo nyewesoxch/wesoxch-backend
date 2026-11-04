@@ -23,7 +23,7 @@ export default function LegalScreen({ navigation }) {
         ))}
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.updated}>Last updated: October 2026</Text>
+        <Text style={styles.updated}>Last updated: November 2026</Text>
         {tab === 'terms' ? (
           <>
             <Text style={styles.heading}>1. Acceptance</Text>
@@ -48,7 +48,7 @@ export default function LegalScreen({ navigation }) {
             <Text style={styles.heading}>3. Email Privacy</Text>
             <Text style={styles.body}>Your full email is never shown to other users.</Text>
             <Text style={styles.heading}>4. Your Rights</Text>
-            <Text style={styles.body}>You can edit or delete your profile anytime. Contact us to delete your account.</Text>
+            <Text style={styles.body}>You can edit your profile at any time. You can delete your account from Settings, and your profile and everything you added is removed.</Text>
             <Text style={styles.heading}>5. Contact</Text>
             <Text style={styles.body}>wesoxchkenya@gmail.com</Text>
           </>
