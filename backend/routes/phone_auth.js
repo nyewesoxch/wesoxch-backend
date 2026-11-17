@@ -150,8 +150,8 @@ router.post('/complete-profile', async (req, res) => {
     if (!/^[a-z0-9_]{3,30}$/.test(uname)) {
       return res.status(400).json({ success: false, message: 'Username must be 3 to 30 letters, numbers or underscores' });
     }
-    if (!Number.isInteger(age) || age < 13 || age > 120) {
-      return res.status(400).json({ success: false, message: 'You must be at least 13 to use Wesoxch' });
+    if (!Number.isInteger(age) || age < 18 || age > 120) {
+      return res.status(400).json({ success: false, message: 'Wesoxch is for people aged 18 and over' });
     }
 
     let created;

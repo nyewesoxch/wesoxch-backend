@@ -5,6 +5,7 @@ require('dotenv').config();
 const ENDED = { success: false, message: 'Your session has ended. Please sign in again.' };
 
 module.exports = async (req, res, next) => {
+  if (req.user) return next(); // already checked earlier in this request
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, message: 'Please sign in' });

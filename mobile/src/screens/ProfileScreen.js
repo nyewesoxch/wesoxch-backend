@@ -153,7 +153,7 @@ export default function ProfileScreen({ navigation }) {
               {[
                 { label: 'Full Name', value: fullName, setter: setFullName },
                 { label: 'Bio', value: bio, setter: setBio, multiline: true },
-                { label: 'Phone', value: phone, setter: setPhone, keyboardType: 'phone-pad' },
+                { label: 'Phone (people who contact you about a listing can see it)', value: phone, setter: setPhone, keyboardType: 'phone-pad' },
               ].map((f, i) => (
                 <View key={i}>
                   <Text style={styles.fieldLabel}>{f.label}</Text>

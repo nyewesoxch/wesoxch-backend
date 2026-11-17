@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
+const requireSignIn = require('./middleware/auth');
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   console.error('JWT_SECRET is missing or too short (use at least 32 characters). Stopping.');
@@ -46,20 +47,20 @@ const authLimiter = rateLimit({
 app.get('/', (req, res) => res.json({ success: true, message: 'Wesoxch API v3.0', version: '3.0.0' }));
 
 app.use('/api/auth', authLimiter, require('./routes/phone_auth'));
-app.use('/api/communities', require('./routes/communities'));
+app.use('/api/communities', requireSignIn, require('./routes/communities'));
 app.use('/api/community-requests', require('./routes/community_requests'));
-app.use('/api/events', require('./routes/events'));
-app.use('/api/listings', require('./routes/listings'));
-app.use('/api/rentals', require('./routes/rentals'));
-app.use('/api/therapy', require('./routes/therapy'));
+app.use('/api/events', requireSignIn, require('./routes/events'));
+app.use('/api/listings', requireSignIn, require('./routes/listings'));
+app.use('/api/rentals', requireSignIn, require('./routes/rentals'));
+app.use('/api/therapy', requireSignIn, require('./routes/therapy'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/search', require('./routes/search'));
+app.use('/api/search', requireSignIn, require('./routes/search'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/moderation', require('./routes/moderation'));
-app.use('/api/premium', require('./routes/premium'));
+app.use('/api/premium', requireSignIn, require('./routes/premium'));
 app.use('/api/account', require('./routes/account'));
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Not found' }));

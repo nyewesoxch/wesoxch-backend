@@ -84,7 +84,7 @@ router.post('/:communityId', authMiddleware, async (req, res) => {
     const ids = others.rows.map(r => r.user_id);
     if (ids.length > 0) {
       const who = sender.rows[0]?.full_name || sender.rows[0]?.username;
-      sendPushNotification(ids, comm.rows[0]?.name || 'New message', `${who}: ${body.substring(0, 80)}`, { type: 'chat', communityId });
+      sendPushNotification(ids, comm.rows[0]?.name || 'New message', `${who} sent a message`, { type: 'chat', communityId });
     }
 
     return res.status(201).json({ success: true, message: result.rows[0] });

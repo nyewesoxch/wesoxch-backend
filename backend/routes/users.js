@@ -22,7 +22,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('SELECT id, username, full_name, bio, avatar_url, location_name, is_seller, is_verified, seller_bio, seller_whatsapp, created_at FROM users WHERE id = $1 AND is_active = TRUE', [req.params.id]);
     if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'Not found' });
-    if (req.user.id !== req.params.id) await pool.query('INSERT INTO profile_views (viewed_user_id, viewer_user_id, viewed_at) VALUES ($1,$2,NOW()) ON CONFLICT (viewed_user_id, viewer_user_id) DO UPDATE SET viewed_at = NOW()', [req.params.id, req.user.id]);
+    // Profile views are deliberately not recorded
     const listings = await pool.query('SELECT id, title, price, price_type, images, location_name FROM listings WHERE created_by = $1 AND is_available = TRUE ORDER BY created_at DESC LIMIT 6', [req.params.id]);
     const events = await pool.query("SELECT id, title, starts_at, location_name, is_free, price, cover_url FROM events WHERE created_by = $1 AND status = 'published' ORDER BY starts_at ASC LIMIT 6", [req.params.id]);
     return res.status(200).json({ success: true, user: result.rows[0], listings: listings.rows.map(l => ({...l, images: parseImages(l.images)})), events: events.rows });

@@ -46,7 +46,7 @@ export default function SetupProfileScreen({ route }) {
     else if (u.length < 3) e.username = 'Username must be at least 3 characters';
     else if (!/^[a-zA-Z0-9_]+$/.test(u)) e.username = 'Letters, numbers and underscores only';
     if (!age) e.age = 'Your age is required';
-    else if (parseInt(age) < 13) e.age = 'You must be at least 13 years old';
+    else if (parseInt(age) < 18) e.age = 'Wesoxch is for people aged 18 and over';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -114,7 +114,7 @@ export default function SetupProfileScreen({ route }) {
             keyboardType="numeric"
             maxLength={3}
           />
-          <Text style={styles.ageNote}>You must be at least 13 to use Wesoxch.</Text>
+          <Text style={styles.ageNote}>Wesoxch is for people aged 18 and over.</Text>
         </View>
 
         <TouchableOpacity

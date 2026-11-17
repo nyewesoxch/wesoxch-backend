@@ -60,6 +60,10 @@ router.delete('/:id/leave', authMiddleware, async (req, res) => {
   } catch (err) { return res.status(500).json({ success: false, message: 'Server error' }); }
 });
 router.get('/:id/members', async (req, res) => {
+  const mine = await pool.query('SELECT 1 FROM community_members WHERE community_id = $1 AND user_id = $2', [req.params.id, req.user.id]).catch(() => null);
+  if (!mine || mine.rows.length === 0) {
+    return res.status(403).json({ success: false, message: 'Join this community to see who is in it' });
+  }
   try {
     const result = await pool.query('SELECT u.id, u.username, u.full_name, u.avatar_url, cm.role, cm.joined_at FROM community_members cm JOIN users u ON cm.user_id = u.id WHERE cm.community_id = $1 ORDER BY cm.role ASC, cm.joined_at ASC', [req.params.id]);
     return res.status(200).json({ success: true, members: result.rows });

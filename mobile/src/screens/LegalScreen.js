@@ -1,57 +1,75 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 
+const SITE = 'https://nyewesoxch.github.io';
+
+const TERMS = [
+  ['Who can use Wesoxch', 'Wesoxch is for people aged 18 and over.'],
+  ['Be kind and honest', 'Do not harass or threaten people, share hate, scam, spam, or post anything illegal. Reported messages are hidden straight away, and we may close accounts that break these rules.'],
+  ['What you post', "You are responsible for what you post. Do not share other people's private details without their permission."],
+  ['Buying, selling and renting', 'Wesoxch connects people. We do not handle payments, and we cannot guarantee a listing, a seller or a landlord. Check things yourself before you pay, and meet in a safe public place.'],
+  ['Our Therapy', 'Our Therapy is peer support, not professional care or an emergency service. If you or someone else is in danger, contact your local emergency services.'],
+  ['Ending your account', 'You can delete your account at any time in Settings.'],
+  ['Contact', 'wesoxchkenya@gmail.com'],
+];
+
+const PRIVACY = [
+  ['The short version', 'No adverts. We never sell your data. We do not use tools that follow you across apps. Wesoxch does not record events.'],
+  ['What we keep', 'Your phone number (never shown to others), your name, username and age, and what you choose to add: a picture, a bio, listings, rentals, events and messages.'],
+  ['Your location', 'Only if you allow it. We save a blurred position, accurate to about 1 km, with what you post.'],
+  ['Who helps us', "Africa's Talking sends your sign-in code by SMS. Our hosting provider stores the data. Expo and Google deliver notifications, which never contain the text of your messages."],
+  ['Your control', 'You can delete your account and everything you added from Settings.'],
+];
+
+const openPage = (path) =>
+  Linking.openURL(SITE + path).catch(() =>
+    Alert.alert('Could not open the page', `You can find it at ${SITE}${path}`));
+
 export default function LegalScreen({ navigation }) {
   const [tab, setTab] = useState('terms');
+  const sections = tab === 'terms' ? TERMS : PRIVACY;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
+        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Legal</Text>
-        <View style={{ width: 22 }} />
+        <Text style={styles.headerTitle}>Terms and Privacy</Text>
+        <View style={styles.iconBtn} />
       </View>
+
       <View style={styles.tabs}>
-        {['terms','privacy'].map(t => (
-          <TouchableOpacity key={t} style={[styles.tab, tab===t && styles.tabActive]} onPress={() => setTab(t)}>
-            <Text style={[styles.tabText, tab===t && styles.tabTextActive]}>{t==='terms' ? 'Terms' : 'Privacy'}</Text>
+        {[['terms', 'Terms'], ['privacy', 'Privacy']].map(([key, label]) => (
+          <TouchableOpacity key={key} style={[styles.tab, tab === key && styles.tabActive]} onPress={() => setTab(key)}>
+            <Text style={[styles.tabText, tab === key && styles.tabTextActive]}>{label}</Text>
           </TouchableOpacity>
         ))}
       </View>
+
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.updated}>Last updated: November 2026</Text>
-        {tab === 'terms' ? (
-          <>
-            <Text style={styles.heading}>1. Acceptance</Text>
-            <Text style={styles.body}>By using Wesoxch, you agree to these Terms of Service.</Text>
-            <Text style={styles.heading}>2. Eligibility</Text>
-            <Text style={styles.body}>You must be at least 13 years old to use Wesoxch.</Text>
-            <Text style={styles.heading}>3. Conduct</Text>
-            <Text style={styles.body}>No harmful content, harassment, spam or illegal activities.</Text>
-            <Text style={styles.heading}>4. Marketplace & Rentals</Text>
-            <Text style={styles.body}>We connect buyers, sellers and landlords but don't handle payments or guarantee transactions.</Text>
-            <Text style={styles.heading}>5. Our Therapy</Text>
-            <Text style={styles.body}>This is peer support, not professional therapy. In crisis, please seek professional help.</Text>
-            <Text style={styles.heading}>6. Contact</Text>
-            <Text style={styles.body}>wesoxchkenya@gmail.com</Text>
-          </>
-        ) : (
-          <>
-            <Text style={styles.heading}>1. What We Collect</Text>
-            <Text style={styles.body}>Account info, profile info you provide, content you post, and approximate location (with permission).</Text>
-            <Text style={styles.heading}>2. How We Use It</Text>
-            <Text style={styles.body}>To provide and improve Wesoxch. We do NOT sell your data or show ads.</Text>
-            <Text style={styles.heading}>3. Email Privacy</Text>
-            <Text style={styles.body}>Your full email is never shown to other users.</Text>
-            <Text style={styles.heading}>4. Your Rights</Text>
-            <Text style={styles.body}>You can edit your profile at any time. You can delete your account from Settings, and your profile and everything you added is removed.</Text>
-            <Text style={styles.heading}>5. Contact</Text>
-            <Text style={styles.body}>wesoxchkenya@gmail.com</Text>
-          </>
+        <Text style={styles.updated}>Last updated: 4 November 2026</Text>
+        {sections.map(([title, body]) => (
+          <View key={title}>
+            <Text style={styles.heading}>{title}</Text>
+            <Text style={styles.body}>{body}</Text>
+          </View>
+        ))}
+
+        {tab === 'privacy' && (
+          <View style={styles.links}>
+            <TouchableOpacity style={styles.linkBtn} onPress={() => openPage('/privacy.html')}>
+              <Text style={styles.linkText}>Read the full Privacy Policy</Text>
+              <Ionicons name="open-outline" size={18} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.linkBtn} onPress={() => openPage('/delete-account.html')}>
+              <Text style={styles.linkText}>How to delete your account</Text>
+              <Ionicons name="open-outline" size={18} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -59,16 +77,20 @@ export default function LegalScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
-  tabs: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
-  tab: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.bgElevated, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  tabActive: { backgroundColor: colors.primary + '20', borderColor: colors.primary },
-  tabText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
-  tabTextActive: { color: colors.primary },
-  content: { padding: 16, paddingBottom: 40 },
-  updated: { color: colors.textMuted, fontSize: 12, marginBottom: 16 },
-  heading: { color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 20, marginBottom: 6 },
-  body: { color: colors.textSecondary, fontSize: 14, lineHeight: 22 },
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, paddingVertical: 4 },
+  iconBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { fontSize: 20, fontWeight: '600', color: colors.text },
+  tabs: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 8 },
+  tab: { flex: 1, minHeight: 44, borderRadius: 8, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' },
+  tabActive: { backgroundColor: colors.primary },
+  tabText: { fontSize: 14, fontWeight: '500', color: colors.text },
+  tabTextActive: { color: '#fff', fontWeight: '600' },
+  content: { padding: 16, paddingBottom: 48 },
+  updated: { fontSize: 12, color: colors.muted, marginBottom: 8 },
+  heading: { fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 24, marginBottom: 8 },
+  body: { fontSize: 14, lineHeight: 22, color: colors.muted },
+  links: { marginTop: 32, gap: 12 },
+  linkBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1.5, borderColor: colors.primary },
+  linkText: { fontSize: 14, fontWeight: '600', color: colors.primary },
 });
