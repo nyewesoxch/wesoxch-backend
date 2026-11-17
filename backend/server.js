@@ -71,6 +71,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
+  require('./utils/retention').startRetention();
   console.log(`Wesoxch API v3.0 running on port ${PORT}${IS_PROD ? ' (production)' : ''}`);
 });
 

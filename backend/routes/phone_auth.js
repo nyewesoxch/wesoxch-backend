@@ -10,6 +10,7 @@ const authMiddleware = require('../middleware/auth');
 const { sendOTP } = require('../utils/sms');
 
 const IS_PROD = process.env.NODE_ENV === 'production';
+const TERMS_VERSION = '2026-11-15'; // change this when the Terms or Privacy Policy change in a way people must agree to again
 const MAX_SENDS_PER_HOUR = IS_PROD ? 5 : 50;   // codes one number can ask for
 const MAX_WRONG_TRIES = 5;                       // wrong guesses before a code stops working
 // The "phone verified" pass uses its own secret, so it cannot be used as a sign-in token
@@ -145,22 +146,22 @@ router.post('/complete-profile', async (req, res) => {
 
     const name = String(req.body.full_name || '').trim();
     const uname = String(req.body.username || '').trim().toLowerCase();
-    const age = parseInt(req.body.age, 10);
+    const adult = req.body.adult_confirmed === true;
     if (!name || name.length > 100) return res.status(400).json({ success: false, message: 'Enter your name' });
     if (!/^[a-z0-9_]{3,30}$/.test(uname)) {
       return res.status(400).json({ success: false, message: 'Username must be 3 to 30 letters, numbers or underscores' });
     }
-    if (!Number.isInteger(age) || age < 18 || age > 120) {
-      return res.status(400).json({ success: false, message: 'Wesoxch is for people aged 18 and over' });
+    if (!adult) {
+      return res.status(400).json({ success: false, message: 'Please confirm that you are 18 or older to continue' });
     }
 
     let created;
     try {
       created = await pool.query(
-        `INSERT INTO users (phone_number, phone_verified, full_name, username, age, email, password_hash, is_email_verified, is_verified)
-         VALUES ($1, TRUE, $2, $3, $4, $5, $6, TRUE, TRUE)
+        `INSERT INTO users (phone_number, phone_verified, full_name, username, adult_confirmed_at, terms_version, email, password_hash, is_email_verified, is_verified)
+         VALUES ($1, TRUE, $2, $3, NOW(), $4, $5, $6, TRUE, TRUE)
          RETURNING id, username, full_name, phone_number, avatar_url, is_seller, is_verified, created_at`,
-        [phone, name, uname, age, `phone_${phone.replace('+', '')}@wesoxch.app`, await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10)]
+        [phone, name, uname, TERMS_VERSION, `phone_${phone.replace('+', '')}@wesoxch.app`, await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10)]
       );
     } catch (e) {
       if (e.code === '23505') {

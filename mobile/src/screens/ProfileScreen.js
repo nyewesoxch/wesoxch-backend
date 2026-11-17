@@ -183,7 +183,7 @@ export default function ProfileScreen({ navigation }) {
                 { label: 'Name', value: user?.full_name || '—' },
                 { label: 'Bio', value: user?.bio || '—' },
                 { label: 'Phone', value: user?.phone || '—' },
-                { label: 'Age', value: user?.age ? `${user.age} years` : '—' },
+                
                 { label: 'Member since', value: formatDate(user?.created_at) },
               ].map((f, i) => (
                 <View key={i} style={styles.infoRow}>

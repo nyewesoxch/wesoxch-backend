@@ -30,6 +30,7 @@ import StoreScreen from './src/screens/StoreScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import BlockedPeopleScreen from './src/screens/BlockedPeopleScreen';
 import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
+import TherapyConsentScreen from './src/screens/TherapyConsentScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -68,6 +69,7 @@ function RootNavigator() {
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="BlockedPeople" component={BlockedPeopleScreen} />
           <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
+          <Stack.Screen name="TherapyConsent" component={TherapyConsentScreen} />
         </>
       ) : (
         <>

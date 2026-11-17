@@ -8,7 +8,8 @@ const isUuid = (s) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]
 
 const COLUMNS = 'cm.id, cm.message, cm.created_at, u.id AS user_id, u.username, u.full_name, u.avatar_url';
 // Hides reported messages and anyone the reader has blocked ($2 = reader's id)
-const VISIBLE = 'cm.is_hidden = FALSE AND cm.user_id NOT IN (SELECT blocked_id FROM user_blocks WHERE blocker_id = $2)';
+const { CHAT_HOURS } = require('../utils/retention');
+const VISIBLE = `cm.is_hidden = FALSE AND cm.created_at > NOW() - make_interval(hours => ${CHAT_HOURS}) AND cm.user_id NOT IN (SELECT blocked_id FROM user_blocks WHERE blocker_id = $2)`;
 
 // Read messages. Members get the latest 100; non-members get a 5-message read-only preview.
 router.get('/:communityId', authMiddleware, async (req, res) => {
@@ -104,7 +105,7 @@ router.get('/unread/:communityId', authMiddleware, async (req, res) => {
     );
     const since = lastRead.rows[0]?.last_read_at || new Date(0);
     const result = await pool.query(
-      'SELECT COUNT(*)::int AS n FROM community_messages WHERE community_id = $1 AND created_at > $2 AND user_id != $3 AND is_hidden = FALSE',
+      `SELECT COUNT(*)::int AS n FROM community_messages WHERE community_id = $1 AND created_at > $2 AND created_at > NOW() - make_interval(hours => ${CHAT_HOURS}) AND user_id != $3 AND is_hidden = FALSE`,
       [req.params.communityId, since, req.user.id]
     );
     return res.status(200).json({ success: true, count: result.rows[0].n });

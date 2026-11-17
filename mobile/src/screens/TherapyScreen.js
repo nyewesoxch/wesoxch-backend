@@ -16,7 +16,11 @@ export default function TherapyScreen({ navigation }) {
   const [topic, setTopic] = useState('');
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => { fetchRooms(); }, []);
+  useEffect(() => {
+    api.get('/therapy/consent')
+      .then(r => { if (r.data.consented) fetchRooms(); else navigation.replace('TherapyConsent'); })
+      .catch(() => fetchRooms());
+  }, []);
 
   const fetchRooms = async () => {
     try { const res = await api.get('/therapy/rooms'); setRooms(res.data.rooms || []); }
